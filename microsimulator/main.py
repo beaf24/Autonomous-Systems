@@ -13,12 +13,12 @@ mapW = 100
 mapH = 100
 realMap = [[0] * mapW for _ in range(mapH)]  # realMap -> 100x100
 scannedMap = [[0] * mapW for _ in range(mapH)]  # scannedMap -> 100x100
-rosX = 20  # initial LIDAR x position
+rosX = 80  # initial LIDAR x position
 rosY = 80  # initial LIDAR y position
 maxRange = 100  # LIDAR range
-maxAngle = 1.5 * math.pi  # LIDAR max angle
+maxAngle = 0.5 * math.pi  # LIDAR max angle
 
-angleIncrements = np.linspace(math.pi, maxAngle, 100, False)
+angleIncrements = np.linspace(0, -maxAngle, 100, False)
 
 scanData = []
 
@@ -69,13 +69,12 @@ for data in scanData:
 
 
 fig, ax = plt.subplots()
-im = ax.imshow(scannedMap)
+im = ax.imshow(np.transpose(scannedMap), origin='lower')
 
 
 
 ax.set_title("Scanned map")
 fig.tight_layout()
 plt.show()
-
 
 
