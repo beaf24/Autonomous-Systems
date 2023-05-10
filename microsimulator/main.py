@@ -33,16 +33,17 @@ realMap[0] = [-1] * mapW
 realMap[1] = [-1] * mapW
 realMap[98] = [-1] * mapW
 realMap[99] = [-1] * mapW
+
+# Set robot position
 realMap[rosX][rosY] = 2
 scannedMap[rosX][rosY] = 2
 
-for row in realMap:
-    print(row)
-
+# For each laser beam
 for angle in angleIncrements:
     x2 = rosX + maxRange * math.cos(angle)
     y2 = rosY - maxRange * math.sin(angle)
-
+    
+    # Divide the beam by 50 parts and iterate each from the origin till obstacle/end
     for i in range(0, 50):
         u = i/50
         x = int(x2 * u + rosX * (1 - u))
@@ -50,16 +51,15 @@ for angle in angleIncrements:
 
         if 0 < x < mapW and 0 < y < mapH:
             angleStr = "Angle_" + str(angle)
-            if realMap[x][y] == -1:
+            if realMap[x][y] == -1:  # Wall found
                 dist = pythagoras(x, y, rosX, rosY)
                 print("x: " + str(x))
                 print("y: " + str(y))
-                print("reamMap[x][y]: " + str(realMap[x][y]))
-                scanData.append([angleStr, dist, x, y])
+                scanData.append([angleStr, dist, x, y])  # Store data
                 break
 
 
-
+# Add scanned obstacles positions to scannedMap
 for data in scanData:
     scanX = data[2]
     scanY = data[3]
@@ -67,11 +67,9 @@ for data in scanData:
 
 
 
-
+# Plot the map
 fig, ax = plt.subplots()
 im = ax.imshow(np.transpose(scannedMap), origin='lower')
-
-
 
 ax.set_title("Scanned map")
 fig.tight_layout()
