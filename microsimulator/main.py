@@ -46,6 +46,7 @@ for angle in angleIncrements:
     # Divide the beam by 50 parts and iterate each from the origin till obstacle/end
     for i in range(0, 50):
         u = i/50
+        # Interpolation
         x = int(x2 * u + rosX * (1 - u))
         y = int(y2 * u + rosY * (1 - u))
 
