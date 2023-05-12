@@ -5,6 +5,9 @@ import numpy as np
 from rosbags.rosbag1 import Reader
 from rosbags.serde import deserialize_cdr, ros1_to_cdr
 from PIL import Image
+import sys
+import csv
+from sys import stdin
 
 class Range:
     def __init__(self, distance, angle):
@@ -131,28 +134,49 @@ class Static_Map:
         im = Image.fromarray(prob_map)
         im.show()
 
-# create reader instance
-with Reader('05_05_Scan&Pose/parado.bag') as reader:
-    # topic and msgtype information is available on .connections list
-    for connection in reader.connections:
-        print(connection.topic, connection.msgtype)
+    @staticmethod
+    def mapping_microsimulation(filename:str):
+        staic_map = Static_Map()
 
-    # iterate over messages
-    for connection, timestamp, rawdata in reader.messages():
-        # Deserialize data from topic /scan
-        if connection.topic == '/scan':
-            msg = deserialize_cdr(ros1_to_cdr(rawdata, connection.msgtype), connection.msgtype)
-            # Add each scan to laserData list
-            laserData.append(LaserData(minAngle=msg.angle_min, maxAngle=msg.angle_max, angleIncrement= msg.angle_increment, ranges= msg.ranges))
+        with open(filename) as csv_file:
+            reader = csv.reader(csv_file)
+            for line in reader:
+                angle, dist, x, y = line
+                static_map.occupancy_grid_mapping((x, y), (angle, dist))
 
-#for each scan (=LaserData object) iterate for each angle increment (=Range object)
-for data in laserData:
-    for range in data.laserData:
-        print("Angle: " + str(range.angle) + " rads   ||||   Distance: " + str(range.distance) + " meters")
+        # data = sys.stdin.readlines()
+        # for line in csv.reader(data):
+        #     angle, dist, x, y = line
+        #     static_map.occupancy_grid_mapping((x, y), (angle, dist))
         
-    break  # break so it doesnt print too much, just prints the first scan
+        return static_map.get_map()
 
-import numpy as np
+if __name__ == "__main__":
+    static_map = Static_Map()
+    Static_Map.mapping_microsimulation('scanData.csv')
+
+    # # create reader instance
+    # with Reader('05_05_Scan&Pose/parado.bag') as reader:
+    #     # topic and msgtype information is available on .connections list
+    #     for connection in reader.connections:
+    #         print(connection.topic, connection.msgtype)
+
+    #     # iterate over messages
+    #     for connection, timestamp, rawdata in reader.messages():
+    #         # Deserialize data from topic /scan
+    #         if connection.topic == '/scan':
+    #             msg = deserialize_cdr(ros1_to_cdr(rawdata, connection.msgtype), connection.msgtype)
+    #             # Add each scan to laserData list
+    #             laserData.append(LaserData(minAngle=msg.angle_min, maxAngle=msg.angle_max, angleIncrement= msg.angle_increment, ranges= msg.ranges))
+
+    # #for each scan (=LaserData object) iterate for each angle increment (=Range object)
+    # for data in laserData:
+    #     for range in data.laserData:
+    #         print("Angle: " + str(range.angle) + " rads   ||||   Distance: " + str(range.distance) + " meters")
+    
+    #     break  # break so it doesnt print too much, just prints the first scan
+
+    
 
 
 

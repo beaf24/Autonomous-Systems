@@ -54,11 +54,13 @@ for angle in angleIncrements:
             angleStr = "Angle_" + str(angle)
             if realMap[x][y] == -1:  # Wall found
                 dist = pythagoras(x, y, rosX, rosY)
-                print("x: " + str(x))
-                print("y: " + str(y))
-                scanData.append([angleStr, dist, x, y])  # Store data
+                #print("x: " + str(x))
+                #print("y: " + str(y))
+                scanData.append([angle, dist, x, y])  # Store data
                 break
 
+array_data = np.asarray(scanData)
+np.savetxt("scanData.csv", array_data, delimiter=",")
 
 # Add scanned obstacles positions to scannedMap
 for data in scanData:
@@ -73,5 +75,4 @@ im = ax.imshow(np.transpose(scannedMap), origin='lower')
 ax.set_title("Scanned map")
 fig.tight_layout()
 plt.show()
-
-
+plt.close()
