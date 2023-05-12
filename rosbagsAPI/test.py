@@ -127,7 +127,7 @@ class Static_Map:
         return map_prob
     
     def get_map(self):
-        prob_map = self.logodds_to_prob
+        prob_map = self.logodds_to_prob()
         im = Image.fromarray(prob_map)
         im.show()
 
