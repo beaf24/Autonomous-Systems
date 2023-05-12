@@ -66,8 +66,6 @@ for data in scanData:
     scanY = data[3]
     scannedMap[scanX][scanY] = 1
 
-
-
 # Plot the map
 fig, ax = plt.subplots()
 im = ax.imshow(np.transpose(scannedMap), origin='lower')
