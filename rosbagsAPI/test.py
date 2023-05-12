@@ -41,81 +41,50 @@ class Static_Map:
         self.resolution = resolution # resolução das celulas da grelha
         self.logodds = self.l0*np.ones((grid_size*resolution, grid_size*resolution)) #grelha de 60 por 60
 
-    def bresenham(self, start, end):
-        """
-        Bresenham's Line Generation Algorithm
-        https://www.youtube.com/watch?v=76gp2IAazV4
-        """
-        # step 1 get end-points of line 
-        (x0, y0) = start
-        (x1, y1) = end
-
-        # step 2 calculate difference
+    def bresenham(start:tuple, end:tuple):
+        """Bresenham's line algorithm implementation"""
+        x0, y0 = start
+        x1, y1 = end
         dx = abs(x1 - x0)
         dy = abs(y1 - y0)
-        m = dy/dx
+        sx = 1 if x0 < x1 else -1
+        sy = 1 if y0 < y1 else -1
+        err = dx - dy
         
-        # step 3 perform test to check if pk < 0
-        flag = True
-        
-        line_pixel = []
-        line_pixel.append((x0,y0))
-        
-        res = self.grid_size * self.resolution
-
-        step = self.resolution
-        if x0>x1 or y0>y1:
-            step = -1
-
-        mm = False   
-        if m < 1:
-            x0, x1 ,y0 ,y1 = y0, y1, x0, x1
-            dx = abs(x1 - x0)
-            dy = abs(y1 - y0)
-            mm = True
+        points = []
+        while True:
+            points.append((x0, y0))
             
-        p0 = 2*dx - dy
-        x = x0
-        y = y0
-        
-        for i in range(abs(y1-y0)):
-            if flag:
-                x_previous = x0
-                p_previous = p0
-                p = p0
-                flag = False
-            else:
-                x_previous = x
-                p_previous = p
+            if x0 == x1 and y0 == y1:
+                break
                 
-            if p >= 0:
-                x = x + step
-
-            p = p_previous + 2*dx -2*dy*(abs(x-x_previous))
-            y = y + 1
-            
-            if mm:
-                line_pixel.append((y,x))
-            else:
-                line_pixel.append((x,y))
+            e2 = 2 * err
+            if e2 > -dy:
+                err -= dy
+                x0 += sx
                 
-        line_pixel = np.array(line_pixel)
-        
-        return line_pixel
+            if e2 < dx:
+                err += dx
+                y0 += sy
+                
+        return points
 
     def occupancy_grid_mapping(self, x_t:tuple, z_t:np.array):
         res = self.grid_size * self.resolution
-        for beam in z_t:  #beam é um tuplo da posição da deteção (distance (m), angle (rads))
-            distance, angle = beam
-            beam_xy = (distance*np.cos(angle), distance*np.sin(angle))
-            
-            line = self.bresenham(start = x_t, end = beam_xy)
-            for mi in line:
-                pos_x, pos_y = mi
-                if mi == line[-1] and z_t != 'NaN': # tem de atingir alvo
-                    self.logodds[pos_x, pos_y] = self.logodds[pos_x, pos_y] + self.l_occ - self.l0
-                else:
-                    self.logodds[pos_x, pos_y] = self.logodds[pos_x, pos_y] + self.l_free - self.l0
+        print(z_t)
+        
+        distance, angle = z_t
+        beam_xy = (distance*np.cos(angle), distance*np.sin(angle))
+        print(x_t, beam_xy)
+        line = self.bresenham(start = x_t, end = beam_xy)
+        print(line)
+        for mi in line:
+            print(mi)
+            pos_x, pos_y = mi
+            if (mi == line[-1]).all() and distance != 'NaN': # tem de atingir alvo
+                self.logodds[pos_x, pos_y] = self.logodds[pos_x, pos_y] + self.l_occ - self.l0
+            else:
+                self.logodds[pos_x, pos_y] = self.logodds[pos_x, pos_y] + self.l_free - self.l0
 
     def logodds_to_prob(self):
         """
@@ -135,25 +104,29 @@ class Static_Map:
         im.show()
 
     @staticmethod
-    def mapping_microsimulation(filename:str):
-        staic_map = Static_Map()
-
-        with open(filename) as csv_file:
-            reader = csv.reader(csv_file)
-            for line in reader:
-                angle, dist, x, y = line
-                static_map.occupancy_grid_mapping((x, y), (angle, dist))
+    def mapping_microsimulation(scanData:np.array):
+        # with open(filename) as csv_file:
+        #     reader = csv.reader(csv_file)
+        #     for line in reader:
+        #         angle, dist, x, y = line
+        #         static_map.occupancy_grid_mapping((x, y), (angle, dist))
 
         # data = sys.stdin.readlines()
         # for line in csv.reader(data):
         #     angle, dist, x, y = line
         #     static_map.occupancy_grid_mapping((x, y), (angle, dist))
+
+        for read in scanData:
+            angle, dist, x, y = read
+            print(angle)
+            static_map.occupancy_grid_mapping((x, y), (angle, dist))
         
         return static_map.get_map()
 
 if __name__ == "__main__":
+    scanData = np.loadtxt(fname='/Users/Beatriz/Documents/GitHub/Autonomous-Systems/rosbagsAPI/scanData.csv', delimiter=',')
     static_map = Static_Map()
-    Static_Map.mapping_microsimulation('scanData.csv')
+    static_map.mapping_microsimulation(scanData)
 
     # # create reader instance
     # with Reader('05_05_Scan&Pose/parado.bag') as reader:
