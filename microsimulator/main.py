@@ -18,7 +18,7 @@ rosY = 80  # initial LIDAR y position
 maxRange = 100  # LIDAR range
 maxAngle = 0.5 * math.pi  # LIDAR max angle
 
-angleIncrements = np.linspace(0, -maxAngle, 100, False)
+angleIncrements = np.linspace(0, maxAngle, 100, False)
 
 scanData = []
 
@@ -41,14 +41,15 @@ scannedMap[rosX][rosY] = 2
 # For each laser beam
 for angle in angleIncrements:
     x2 = rosX + maxRange * math.cos(angle)
-    y2 = rosY - maxRange * math.sin(angle)
+    y2 = rosY + maxRange * math.sin(angle)
     
-    # Divide the beam by 50 parts and iterate each from the origin till obstacle/end
+    # Divide the beam by 50 parts (this number can be tweaked...) and iterate through each part 
+    # from the origin untill the obstacle/end
     for i in range(0, 50):
         u = i/50
         # Interpolation
-        x = int(x2 * u + rosX * (1 - u))
-        y = int(y2 * u + rosY * (1 - u))
+        x = int(rosX + (x2 - rosX) * u)    # note that rosX and rosY are the inital LiDAR position
+        y = int(rosY + (y2 - rosY) * u)
 
         if 0 < x < mapW and 0 < y < mapH:
             angleStr = "Angle_" + str(angle)
