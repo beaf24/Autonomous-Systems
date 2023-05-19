@@ -57,7 +57,7 @@ for angle in angleIncrements:
                 dist = pythagoras(x, y, rosX, rosY)
                 #print("x: " + str(x))
                 #print("y: " + str(y))
-                scanData.append([angle, dist, x, y])  # Store data
+                scanData.append([x, y, np.pi/2, dist, angle])  # Store data
                 break
 
 array_data = np.asarray(scanData)
@@ -65,8 +65,8 @@ np.savetxt("scanData.csv", array_data, delimiter=",")
 
 # Add scanned obstacles positions to scannedMap
 for data in scanData:
-    scanX = data[2]
-    scanY = data[3]
+    scanX = data[0]
+    scanY = data[1]
     scannedMap[scanX][scanY] = 1
 
 # Plot the map

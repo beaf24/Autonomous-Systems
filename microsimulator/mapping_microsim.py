@@ -8,7 +8,7 @@ from PIL import Image
 import sys
 import csv
 from sys import stdin
-import Bresenham
+from bresenham import determine_coords, bres_algo
 
 class Range:
     def __init__(self, distance, angle):
@@ -33,26 +33,34 @@ class LaserData:
 
 laserData = []
 
-class Static_Map(Bresenham):
+class Static_Map():
     def __init__(self, grid_size: int =60, resolution:int = 1):
         self.l0 = np.log(0.5/0.5)
+        
         self.l_free = 0.2 
         self.l_occ = 0.8
         self.grid_size = grid_size # tamanho em metros da grelha
         self.resolution = resolution # resolução das celulas da grelha
-        self.logodds = self.l0*np.ones((grid_size*resolution, grid_size*resolution)) #grelha de 60 por 60
+        self.logodds = np.zeros((100, 100), dtype=float) #grelha de 60 por 60
 
-    def occupancy_grid_mapping(self, x_t:tuple, z_t:tuple, resolution: float):
-        x_z, y_z = self.determine_cords()
-        line = self.bresAlgo(start = x_t, end = (x_z, y_z))
-        print(line)
-        for mi in line:
-            print(mi)
-            pos_x, pos_y = mi
-            if (mi == line[-1]).all() and distance == range: # tem de atingir alvo
-                self.logodds[pos_x, pos_y] = self.logodds[pos_x, pos_y] + self.l_occ - self.l0
-            else:
-                self.logodds[pos_x, pos_y] = self.logodds[pos_x, pos_y] + self.l_free - self.l0
+    def occupancy_grid_mapping(self, x_t:tuple, z_t:tuple):
+        x_robot, y_robot = x_t
+        x_obstacle, y_obstacle = z_t
+        
+        bres_algo(x_robot, y_robot, x_obstacle, y_obstacle, self.logodds)
+
+        self.logodds[x_obstacle, y_obstacle] = self.logodds[x_obstacle, y_obstacle] + 0.6
+        # print("line: ")
+        # print(line)
+        # for mi in line:
+        #     print(mi)
+        #     pos_x, pos_y = mi
+        #     if mi == line[-1]: # tem de atingir alvo
+        #         self.logodds[pos_x, pos_y] = self.logodds[pos_x, pos_y] + self.l_occ - self.l0
+        #     else:
+        #         self.logodds[pos_x, pos_y] = self.logodds[pos_x, pos_y] + self.l_free - self.l0
+
+        print(self.logodds)
 
     def logodds_to_prob(self):
         """
@@ -71,7 +79,6 @@ class Static_Map(Bresenham):
         im = Image.fromarray(prob_map)
         im.show()
 
-    @staticmethod
     def mapping_microsimulation(self, scanData:np.array):
         # with open(filename) as csv_file:
         #     reader = csv.reader(csv_file)
@@ -85,17 +92,18 @@ class Static_Map(Bresenham):
         #     static_map.occupancy_grid_mapping((x, y), (angle, dist))
 
         for read in scanData:
-            x, y, angle, dist_detc, angle_detc, range_max = read
+            robot_x, robot_y, robot_angle, laser_dist, laser_angle = read
             # angle_dect, dist_dect, x, y, angle = read
-            print(angle)
-
-            static_map.occupancy_grid_mapping((x, y, angle), (dist_detc, angle_detc, range_max), self.resolution)
+            if laser_dist != 'NaN':
+                z_t = determine_coords(robot_x, robot_y, robot_angle, laser_angle, laser_dist, self.resolution)
+                static_map.occupancy_grid_mapping((robot_x, robot_y), z_t)
         
         return static_map.get_map()
 
 if __name__ == "__main__":
-    scanData = np.loadtxt(fname='/Users/Beatriz/Documents/GitHub/Autonomous-Systems/rosbagsAPI/scanData.csv', delimiter=',')
-    static_map = Static_Map()
+    scanData = np.loadtxt(fname='/Users/Beatriz/Documents/GitHub/Autonomous-Systems/microsimulator/scanData.csv', delimiter=',')
+    print(type(scanData))
+    static_map = Static_Map(scanData)
     static_map.mapping_microsimulation(scanData)
     
 

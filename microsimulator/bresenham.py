@@ -53,4 +53,5 @@ def bres_algo(x0, y0, x1, y1, map):
             
             error = error + dX
             pointY = pointY + increment_Y
+        
 
