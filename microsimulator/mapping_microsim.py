@@ -8,6 +8,7 @@ from PIL import Image
 import sys
 import csv
 from sys import stdin
+import matplotlib.pyplot as plt
 from bresenham import determine_coords, bres_algo
 
 class Range:
@@ -34,12 +35,12 @@ class LaserData:
 laserData = []
 
 class Static_Map():
-    def __init__(self, grid_size: int =60, resolution:int = 1):
+    def __init__(self, grid_size: int =100, resolution:int = 1):
         self.l0 = np.log(0.5/0.5)
         
         self.l_free = 0.2 
         self.l_occ = 0.8
-        self.grid_size = grid_size # tamanho em metros da grelha
+        self.grid_size = 100 # tamanho em metros da grelha
         self.resolution = resolution # resolução das celulas da grelha
         self.logodds = np.zeros((100, 100), dtype=float) #grelha de 60 por 60
 
@@ -49,7 +50,7 @@ class Static_Map():
         
         bres_algo(x_robot, y_robot, x_obstacle, y_obstacle, self.logodds)
 
-        self.logodds[x_obstacle, y_obstacle] = self.logodds[x_obstacle, y_obstacle] + 0.6
+        self.logodds[x_obstacle][y_obstacle] = self.logodds[x_obstacle][y_obstacle] + 0.6
         # print("line: ")
         # print(line)
         # for mi in line:
@@ -71,13 +72,18 @@ class Static_Map():
         for i in np.arange(res):
             for j in np.arange(res):
                 map_prob[i, j] = 1 - 1/(1+np.exp(self.logodds[i, j]))
-        
+        print(self.logodds)
         return map_prob
     
     def get_map(self):
         prob_map = self.logodds_to_prob()
-        im = Image.fromarray(prob_map)
-        im.show()
+
+        fig, ax = plt.subplots()
+        im = ax.imshow(prob_map, origin='upper')
+
+        ax.set_title("Scanned map")
+        fig.tight_layout()
+        plt.show()
 
     def mapping_microsimulation(self, scanData:np.array):
         # with open(filename) as csv_file:
@@ -96,9 +102,11 @@ class Static_Map():
             # angle_dect, dist_dect, x, y, angle = read
             if laser_dist != 'NaN':
                 z_t = determine_coords(robot_x, robot_y, robot_angle, laser_angle, laser_dist, self.resolution)
-                static_map.occupancy_grid_mapping((robot_x, robot_y), z_t)
+
+                print(z_t)
+                self.occupancy_grid_mapping((robot_x, robot_y), z_t)
         
-        return static_map.get_map()
+        return self.get_map()
 
 if __name__ == "__main__":
     scanData = np.loadtxt(fname='/Users/Beatriz/Documents/GitHub/Autonomous-Systems/microsimulator/scanData.csv', delimiter=',')

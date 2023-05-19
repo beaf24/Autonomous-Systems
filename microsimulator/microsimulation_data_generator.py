@@ -2,6 +2,7 @@ import numpy as np
 import math
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from bresenham import determine_coords
 
 def pythagoras(obstacleX, obstacleY, rosX, rosY):
     dist_x = (obstacleX - rosX) ** 2
@@ -57,17 +58,19 @@ for angle in angleIncrements:
                 dist = pythagoras(x, y, rosX, rosY)
                 #print("x: " + str(x))
                 #print("y: " + str(y))
-                scanData.append([x, y, np.pi/2, dist, angle])  # Store data
+                scanData.append([rosX, rosY, 0, dist, angle])  # Store data
                 break
 
 array_data = np.asarray(scanData)
 np.savetxt("scanData.csv", array_data, delimiter=",")
 
 # Add scanned obstacles positions to scannedMap
+
 for data in scanData:
+    data_X, data_Y = determine_coords(data[0], data[1], data[2], data[4], data[3], 1)
     scanX = data[0]
     scanY = data[1]
-    scannedMap[scanX][scanY] = 1
+    scannedMap[data_X][data_Y] = 1
 
 # Plot the map
 fig, ax = plt.subplots()
