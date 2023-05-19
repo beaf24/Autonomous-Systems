@@ -61,8 +61,6 @@ class Static_Map():
         #     else:
         #         self.logodds[pos_x, pos_y] = self.logodds[pos_x, pos_y] + self.l_free - self.l0
 
-        print(self.logodds)
-
     def logodds_to_prob(self):
         """
         Converter logodds em probabilidades
@@ -72,7 +70,6 @@ class Static_Map():
         for i in np.arange(res):
             for j in np.arange(res):
                 map_prob[i, j] = 1 - 1/(1+np.exp(self.logodds[i, j]))
-        print(self.logodds)
         return map_prob
     
     def get_map(self):
@@ -81,7 +78,7 @@ class Static_Map():
         fig, ax = plt.subplots()
         im = ax.imshow(prob_map, origin='upper')
 
-        ax.set_title("Scanned map")
+        ax.set_title("Scanned map - Microsimulation")
         fig.tight_layout()
         plt.show()
 
@@ -103,19 +100,17 @@ class Static_Map():
             if laser_dist != 'NaN':
                 z_t = determine_coords(robot_x, robot_y, robot_angle, laser_angle, laser_dist, self.resolution)
                 rosX, rosY = z_t
-                print(z_t)
                 self.occupancy_grid_mapping((100-robot_x-1, robot_y), (100-rosX-1, rosY))
         
         return self.get_map()
 
 if __name__ == "__main__":
     scanData = np.loadtxt(fname='/Users/Beatriz/Documents/GitHub/Autonomous-Systems/microsimulator/scanData.csv', delimiter=',')
-    print(type(scanData))
     static_map = Static_Map(scanData)
     static_map.mapping_microsimulation(scanData)
     
 
-## READ DATA FROM ROS TOPICS
+## READ DATA FROM ROS TOPICS com rosbags
     # # create reader instance
     # with Reader('05_05_Scan&Pose/parado.bag') as reader:
     #     # topic and msgtype information is available on .connections list
