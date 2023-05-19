@@ -35,14 +35,13 @@ class LaserData:
 laserData = []
 
 class Static_Map():
-    def __init__(self, grid_size: int =100, resolution:int = 1):
-        self.l0 = np.log(0.5/0.5)
-        
-        self.P_free = 0.2 
-        self.P_occ = 0.8
-        self.grid_size = 100 # tamanho em metros da grelha
+    def __init__(self, grid_size: int =100, resolution:int = 1, P_free: float = 0.2, P_occ: float = 0.8, P_ukn:float = 0.5):
+        self.l0 = np.log(P_ukn/P_ukn)
+        self.P_free = P_free 
+        self.P_occ = P_occ
+        self.grid_size = grid_size # tamanho em metros da grelha
         self.resolution = resolution # resolução das celulas da grelha
-        self.logodds = np.zeros((100, 100), dtype=float) #grelha de 60 por 60
+        self.logodds = self.l0 * np.ones((grid_size*resolution, grid_size*resolution), dtype=float) #grelha de 60 por 60
 
     def occupancy_grid_mapping(self, x_t:tuple, z_t:tuple):
         x_robot, y_robot = x_t
@@ -100,13 +99,13 @@ class Static_Map():
             if laser_dist != 'NaN':
                 z_t = determine_coords(robot_x, robot_y, robot_angle, laser_angle, laser_dist, self.resolution)
                 rosX, rosY = z_t
-                self.occupancy_grid_mapping((100-robot_x-1, robot_y), (100-rosX-1, rosY))
+                self.occupancy_grid_mapping((self.grid_size-robot_x-1, robot_y), (self.grid_size-rosX-1, rosY))
         
         return self.get_map()
 
 if __name__ == "__main__":
-    scanData = np.loadtxt(fname='/Users/Beatriz/Documents/GitHub/Autonomous-Systems/microsimulator/scanData.csv', delimiter=',')
-    static_map = Static_Map(scanData)
+    scanData = np.loadtxt(fname='./scanData.csv', delimiter=',')
+    static_map = Static_Map()
     static_map.mapping_microsimulation(scanData)
     
 
