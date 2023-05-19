@@ -38,8 +38,8 @@ class Static_Map():
     def __init__(self, grid_size: int =100, resolution:int = 1):
         self.l0 = np.log(0.5/0.5)
         
-        self.l_free = 0.2 
-        self.l_occ = 0.8
+        self.P_free = 0.2 
+        self.P_occ = 0.8
         self.grid_size = 100 # tamanho em metros da grelha
         self.resolution = resolution # resolução das celulas da grelha
         self.logodds = np.zeros((100, 100), dtype=float) #grelha de 60 por 60
@@ -48,9 +48,9 @@ class Static_Map():
         x_robot, y_robot = x_t
         x_obstacle, y_obstacle = z_t
         
-        bres_algo(x_robot, y_robot, x_obstacle, y_obstacle, self.logodds)
+        bres_algo(x_robot, y_robot, x_obstacle, y_obstacle, self.logodds, np.log(self.P_free/self.P_occ))
 
-        self.logodds[x_obstacle][y_obstacle] = self.logodds[x_obstacle][y_obstacle] + 0.6
+        self.logodds[x_obstacle][y_obstacle] = self.logodds[x_obstacle][y_obstacle] + np.log(self.P_occ/self.P_free)
         # print("line: ")
         # print(line)
         # for mi in line:
@@ -102,9 +102,9 @@ class Static_Map():
             # angle_dect, dist_dect, x, y, angle = read
             if laser_dist != 'NaN':
                 z_t = determine_coords(robot_x, robot_y, robot_angle, laser_angle, laser_dist, self.resolution)
-
+                rosX, rosY = z_t
                 print(z_t)
-                self.occupancy_grid_mapping((robot_x, robot_y), z_t)
+                self.occupancy_grid_mapping((100-robot_x-1, robot_y), (100-rosX-1, rosY))
         
         return self.get_map()
 

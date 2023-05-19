@@ -36,7 +36,7 @@ def bres_algo(x0, y0, x1, y1, map, l_free):
     while(True):
         if ( pointX == x1) and ( pointY == y1):
             break
-        
+        # if map[int(pointX)][int(pointY)] == 0:
         map[int(pointX)][int(pointY)] = map[int(pointX)][int(pointY)] + l_free
         e2 = error*2
 
@@ -54,4 +54,3 @@ def bres_algo(x0, y0, x1, y1, map, l_free):
             error = error + dX
             pointY = pointY + increment_Y
         
-
