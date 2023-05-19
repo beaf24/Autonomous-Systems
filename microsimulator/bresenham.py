@@ -12,7 +12,7 @@ def determine_coords(x0, y0, z_angle, laser_angle, laser_measure, meters_pixel_r
     return int(x1), int(y1)
 
 
-def bres_algo(x0, y0, x1, y1, map):
+def bres_algo(x0, y0, x1, y1, map, l_free):
     pointX = x0
     pointY = y0
 
@@ -37,7 +37,7 @@ def bres_algo(x0, y0, x1, y1, map):
         if ( pointX == x1) and ( pointY == y1):
             break
         
-        map[int(pointX)][int(pointY)] = map[int(pointX)][int(pointY)] + 0.2
+        map[int(pointX)][int(pointY)] = map[int(pointX)][int(pointY)] + l_free
         e2 = error*2
 
         if ( e2 >= dY ):

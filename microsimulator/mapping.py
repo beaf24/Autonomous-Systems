@@ -8,11 +8,14 @@ from bresenham import determine_coords, bres_algo
 max_map_x = 1000
 max_map_y = 1000
 
+l_occ = np.log(0.7/0.3)
+l_free = np.log(0.3/0.7)
+
 init_x = max_map_x/2 - 1
 init_y = max_map_y/2 - 1
 
-robot_x = max_map_x/2 - 1
-robot_y = max_map_y/2 - 1
+robot_x = init_x
+robot_y = init_y
 meter_per_pixel = 0.05
 
 map = [[0] * max_map_x for _ in range(max_map_y)]
@@ -43,9 +46,9 @@ for topic, msg, t in bag.read_messages(topics=['/amcl_pose', '/scan']):
 
             obstacle_x, obstacle_y = determine_coords( x0= robot_x, y0= robot_y, z_angle= robot_orientation, laser_angle= measure.angle, laser_measure= measure.distance, meters_pixel_ratio= meter_per_pixel)
             
-            bres_algo(robot_x, robot_y, obstacle_x, obstacle_y, map)
+            bres_algo(robot_x, robot_y, obstacle_x, obstacle_y, map, l_free)
 
-            map[obstacle_x][obstacle_y] = map[obstacle_x][obstacle_y] + 0.8
+            map[obstacle_x][obstacle_y] = map[obstacle_x][obstacle_y] + l_occ
 
 
 for row in map:
