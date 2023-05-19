@@ -46,7 +46,7 @@ for topic, msg, t in bag.read_messages(topics=['/amcl_pose', '/scan']):
 
             obstacle_x, obstacle_y = determine_coords( x0= robot_x, y0= robot_y, z_angle= robot_orientation, laser_angle= measure.angle, laser_measure= measure.distance, meters_pixel_ratio= meter_per_pixel)
             
-            bres_algo(robot_x, robot_y, obstacle_x, obstacle_y, map)
+            bres_algo(robot_x, robot_y, obstacle_x, obstacle_y, map, l_free)
 
             map[obstacle_x][obstacle_y] = map[obstacle_x][obstacle_y] + l_occ
 
