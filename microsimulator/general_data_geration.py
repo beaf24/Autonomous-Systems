@@ -99,7 +99,7 @@ def scannedMap(map:np.array, scanData, rosX:int, rosY:int):
         scannedMap[data_X][data_Y] = 1
 
     scannedMap[rosX][rosY] = 2
-    
+
     # Plot the map
     fig, ax = plt.subplots()
     im = ax.imshow(np.transpose(scannedMap), origin='lower')
@@ -118,6 +118,4 @@ scannedMap(realMap, scanData, rosX, rosY)
 
 static_map = Static_Map(grid_size = mapH)
 static_map.mapping_microsimulation(scanData)
-
-
 
