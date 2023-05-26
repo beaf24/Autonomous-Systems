@@ -3,6 +3,7 @@ from skimage.metrics import structural_similarity as ssim
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
+import os
 
 def mse(imageA, imageB):
 	# the 'Mean Squared Error' between the two images is the
@@ -35,7 +36,8 @@ def compare_images(imageA, imageB, title):
 	
 # load the images -- the original, the original + contrast,
 # and the original + photoshop
-gmapping = cv2.imread("images/jp_gates_original.png")
-occupancy_gm = cv2.imread("images/jp_gates_contrast.png")
 
-compare_images(gmapping, occupancy_gm)
+gmapping = cv2.imread(os.getcwd() + "/comparison/" + "gmapping_compare.png")
+occupancy_gm = cv2.imread(os.getcwd() + "/comparison/" + "algorithm_compare.png")
+
+compare_images(gmapping, occupancy_gm, "title")
