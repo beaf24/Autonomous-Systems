@@ -6,6 +6,7 @@ from PIL import Image
 from bresenham import determine_coords
 import copy
 import os
+from mapping_microsim import Static_Map
 
 def pythagoras(obstacleX, obstacleY, rosX, rosY):
     dist_x = (obstacleX - rosX) ** 2
@@ -27,14 +28,14 @@ def import_imageMap(filename: str):
     
     mapW, mapH = map.shape
 
-    # fig, ax = plt.subplots()
-    # im = ax.imshow(map, origin='lower', cmap = 'gray')
-    # fig.colorbar(im)
+    fig, ax = plt.subplots()
+    im = ax.imshow(map, origin='lower', cmap = 'gray')
+    fig.colorbar(im)
 
-    # ax.set_title("Scanned map")
-    # fig.tight_layout()
-    # plt.show()
-    # plt.close()
+    ax.set_title("Scanned map")
+    fig.tight_layout()
+    plt.show()
+    plt.close()
 
     return list(map), mapW, mapH
 
@@ -84,12 +85,11 @@ def scan_data(map:list, rosX:int = 80, rosY:int = 80, maxRange:float = 100, minA
 
     array_data = np.asarray(scanData)
 
-    return scanData, array_data
+    return scanData, array_data, rosX, rosY
 
-def scannedMap(map:np.array, scanData, rosX:int = 80, rosY:int = 80):
+def scannedMap(map:np.array, scanData, rosX:int, rosY:int):
     mapW, mapH = np.array(map).shape
     scannedMap = [[0] * mapW for _ in range(mapH)]  # scannedMap -> 100x100
-    scannedMap[rosX][rosY] = 2
     # Add scanned obstacles positions to scannedMap
 
     for data in scanData:
@@ -98,6 +98,8 @@ def scannedMap(map:np.array, scanData, rosX:int = 80, rosY:int = 80):
         scanY = data[1]
         scannedMap[data_X][data_Y] = 1
 
+    scannedMap[rosX][rosY] = 2
+    
     # Plot the map
     fig, ax = plt.subplots()
     im = ax.imshow(np.transpose(scannedMap), origin='lower')
@@ -108,13 +110,14 @@ def scannedMap(map:np.array, scanData, rosX:int = 80, rosY:int = 80):
     plt.close()
 
 
-realMap, mapW, mapH = import_imageMap("piso5.png")
-# realMap, mapW, mapH = create_realMap()
-scanData, array_data = scan_data(realMap)
+realMap, mapW, mapH = import_imageMap("piso5 (2).png")
+#realMap, mapW, mapH = create_realMap()
+scanData, array_data, rosX, rosY = scan_data(realMap, maxAngle=2*np.pi, increments=200, rosX=50, rosY=100)
 np.savetxt("scanData.csv", array_data, delimiter=",")
-scannedMap(realMap, scanData)
+scannedMap(realMap, scanData, rosX, rosY)
 
-
+static_map = Static_Map(grid_size = mapH)
+static_map.mapping_microsimulation(scanData)
 
 
 
