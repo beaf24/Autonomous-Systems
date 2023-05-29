@@ -4,6 +4,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 import os
+from simpleicp import PointCloud, SimpleICP
+from PIL import Image
+import icp
+
+
+## 1.
+# Aplicar o algoritmo Iterative closest point (ICP) para obter a matriz de transformação que permite obter o
+# erro minimo entre o mapa obtido e a groud truth
+## 2. 
+# Calcular a average distance to the nearest neighbour (ADNN)
+# DOI: 10.1109/ICARCV.2018.8581131
 
 def mse(imageA, imageB):
 	# the 'Mean Squared Error' between the two images is the
@@ -37,7 +48,27 @@ def compare_images(imageA, imageB, title):
 # load the images -- the original, the original + contrast,
 # and the original + photoshop
 
-gmapping = cv2.imread(os.getcwd() + "/comparison/" + "gmapping_compare.png")
-occupancy_gm = cv2.imread(os.getcwd() + "/comparison/" + "algorithm_compare.png")
+gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
+occupancy = np.array(Image.open(os.getcwd() + "/comparison/" + "algorithm_compare.png"))
+print(np.unique(occupancy))
+pc_gmapping = np.argwhere(gmapping == 254)
+pc_occupancy = np.argwhere(occupancy == 255)
+print(pc_occupancy[:, 0:2])
+# transformation, points = icp.icp(pc_gmapping, pc_occupancy)
+np.savetxt("pc_gmapping.xy", pc_gmapping)
+np.savetxt("pc_occupancy.xy", pc_occupancy)
 
-compare_images(gmapping, occupancy_gm, "title")
+X_mapping = np.genfromtxt("pc_gmapping.xy")
+X_occupancy = np.genfromtxt("pc_occupancy.xy")
+
+#Create point cloud objects
+pc_gmapping = PointCloud(X_mapping, columns = ["x", "y"])
+pc_occupancy = PointCloud(X_occupancy, columns = ["x", "y"])
+print("ok")
+# Create simpleICP object, add point clouds, and run algorithm!
+icp = SimpleICP()
+icp.add_point_clouds(pc_gmapping, pc_occupancy)
+print("ok")
+H, X_mov_transformed, rigid_body_transformation_params, distance_residuals = icp.run(max_overlap_distance=1)
+
+# compare_images(gmapping, occupancy, "title")
