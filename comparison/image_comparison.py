@@ -2,12 +2,10 @@
 from skimage.metrics import structural_similarity as ssim
 import matplotlib.pyplot as plt
 import numpy as np
-import cv2
+from sklearn.neighbors import NearestNeighbors
 import os
 from simpleicp import PointCloud, SimpleICP
 from PIL import Image
-import icp
-
 
 ## 1.
 # Aplicar o algoritmo Iterative closest point (ICP) para obter a matriz de transformação que permite obter o
@@ -44,31 +42,70 @@ def compare_images(imageA, imageB, title):
 	plt.axis("off")
 	# show the images
 	plt.show()
-	
-# load the images -- the original, the original + contrast,
-# and the original + photoshop
 
-gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
-occupancy = np.array(Image.open(os.getcwd() + "/comparison/" + "algorithm_compare.png"))
-print(np.unique(occupancy))
+def iterative_closest_point(ground_truth, X):
+	"""Serve para obter a matriz de transformação que permite obter o 
+	minimo erro entre ground_truth e X
+	...
+	Ainda não consegui bons resultados com dados 2D
+	...
+	"""
+	np.savetxt("pc_gmapping.xyz", ground_truth)
+	np.savetxt("pc_occupancy.xyz", X)
+
+	X_mapping = np.genfromtxt("pc_gmapping.xyz")
+	X_occupancy = np.genfromtxt("pc_occupancy.xyz")
+
+	#Create point cloud objects
+	pc_gmapping = PointCloud(X_mapping, columns = ["x", "y", "z"])
+	pc_occupancy = PointCloud(X_occupancy, columns = ["x", "y", "z"])
+	print("ok")
+	# Create simpleICP object, add point clouds, and run algorithm!
+	icp = SimpleICP()
+	icp.add_point_clouds(pc_gmapping, pc_occupancy)
+	print("ok")
+	H, X_mov_transformed, rigid_body_transformation_params, distance_residuals = icp.run(max_overlap_distance=1)
+
+	print(X_mov_transformed)
+	plt.imshow(H)
+	plt.show()
+
+def ADNN(ground_truth, X, metric:str = "cosine"):
+	"""Computes the error with cosine metric"""
+	neigh = NearestNeighbors(n_neighbors=1, metric=metric).fit(ground_truth)
+	neigh_dist, _ = neigh.kneighbors(X)
+
+	adnn = neigh_dist.mean()/neigh_dist.shape[0]
+	return adnn
+	
+
+# gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
+gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "piso5.png"))
+occupancy = np.array(Image.open(os.getcwd() + "/comparison/" + "algorithm_compare.png"))[:, :, 0]
+print(np.unique(gmapping))
 pc_gmapping = np.argwhere(gmapping == 254)
 pc_occupancy = np.argwhere(occupancy == 255)
-print(pc_occupancy[:, 0:2])
-# transformation, points = icp.icp(pc_gmapping, pc_occupancy)
-np.savetxt("pc_gmapping.xy", pc_gmapping)
-np.savetxt("pc_occupancy.xy", pc_occupancy)
 
-X_mapping = np.genfromtxt("pc_gmapping.xy")
-X_occupancy = np.genfromtxt("pc_occupancy.xy")
+print(pc_occupancy[:,0])
 
-#Create point cloud objects
-pc_gmapping = PointCloud(X_mapping, columns = ["x", "y"])
-pc_occupancy = PointCloud(X_occupancy, columns = ["x", "y"])
-print("ok")
-# Create simpleICP object, add point clouds, and run algorithm!
-icp = SimpleICP()
-icp.add_point_clouds(pc_gmapping, pc_occupancy)
-print("ok")
-H, X_mov_transformed, rigid_body_transformation_params, distance_residuals = icp.run(max_overlap_distance=1)
+## CONFIRMATION
+# confirm_g = np.zeros(gmapping.shape)
+# confirm_g[pc_gmapping[:,0], pc_gmapping[:,1]] = 1
+
+# confirm_o = np.zeros(occupancy.shape)
+# confirm_o[pc_occupancy[:,0], pc_occupancy[:,1]] = 1
+
+# plt.imshow(confirm_g)
+# plt.show()
+
+## CONVERT TO 3D DATA (for ITC)
+# final_gmapping = np.zeros((pc_gmapping.shape[0], 3))
+# final_gmapping[:, 0:2] = pc_gmapping
+# final_occupancy = np.zeros((pc_occupancy.shape[0], 3))
+# final_occupancy[:, 0:2] = pc_occupancy[:, 0:2]
+# print(final_occupancy)
+
+adnn = ADNN(pc_gmapping, pc_occupancy)
+print(adnn)
 
 # compare_images(gmapping, occupancy, "title")
