@@ -23,8 +23,8 @@ except:
     print("file does not exist, creating it")
 
 try:
-    os.remove("./export.txt")
-    os.remove("./size.txt")
+    os.remove("./export2.txt")
+    os.remove("./size2.txt")
 except:
     print("file does not exist")
 
