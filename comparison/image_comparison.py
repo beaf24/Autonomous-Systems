@@ -75,28 +75,33 @@ def ADNN(ground_truth, X, metric:str = "cosine"):
 	neigh = NearestNeighbors(n_neighbors=1, metric=metric).fit(ground_truth)
 	neigh_dist, _ = neigh.kneighbors(X)
 
-	adnn = neigh_dist.mean()/neigh_dist.shape[0]
+	adnn = np.sum(neigh_dist**2)/neigh_dist.shape[0]
 	return adnn
 	
 
 # gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
-gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "piso5.png"))
+gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
 occupancy = np.array(Image.open(os.getcwd() + "/comparison/" + "algorithm_compare.png"))[:, :, 0]
 print(np.unique(gmapping))
-pc_gmapping = np.argwhere(gmapping == 254)
-pc_occupancy = np.argwhere(occupancy == 255)
+pc_gmapping = np.argwhere(gmapping == 0)
+pc_occupancy = np.argwhere(occupancy == 0)
 
-print(pc_occupancy[:,0])
+print(pc_occupancy[:,0] - pc_occupancy[:,0].min())
 
 ## CONFIRMATION
-# confirm_g = np.zeros(gmapping.shape)
-# confirm_g[pc_gmapping[:,0], pc_gmapping[:,1]] = 1
+confirm_g = np.zeros(gmapping.shape)
+confirm_g[pc_gmapping[:,0], pc_gmapping[:,1]] = 1
 
-# confirm_o = np.zeros(occupancy.shape)
-# confirm_o[pc_occupancy[:,0], pc_occupancy[:,1]] = 1
+confirm_o = np.zeros(occupancy.shape)
+confirm_o[pc_occupancy[:,0], pc_occupancy[:,1]] = 1
 
-# plt.imshow(confirm_g)
-# plt.show()
+# compare_map = np.zeros((max(occupancy.shape[0], gmapping.shape[0]), max(occupancy.shape[1], gmapping.shape[1])))
+compare_map = np.zeros((max(pc_occupancy[:,0].max(), pc_gmapping[:,0].max())+1, max(pc_occupancy[:,1].max(), pc_gmapping[:,1].max())+1))
+compare_map[pc_gmapping[:,0] - pc_gmapping[:,0].min(), pc_gmapping[:,1]- pc_gmapping[:,1].min()] = 1
+compare_map[pc_occupancy[:,0]- pc_occupancy[:,0].min(), pc_occupancy[:,1]- pc_occupancy[:,1].min()] = 2
+
+plt.imshow(compare_map)
+plt.show()
 
 ## CONVERT TO 3D DATA (for ITC)
 # final_gmapping = np.zeros((pc_gmapping.shape[0], 3))
@@ -105,7 +110,7 @@ print(pc_occupancy[:,0])
 # final_occupancy[:, 0:2] = pc_occupancy[:, 0:2]
 # print(final_occupancy)
 
-adnn = ADNN(pc_gmapping, pc_occupancy)
+adnn = ADNN(pc_gmapping, pc_occupancy, metric = "euclidean")
 print(adnn)
 
 # compare_images(gmapping, occupancy, "title")
