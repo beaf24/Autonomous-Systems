@@ -1,9 +1,3 @@
-# # https://github.com/richardos/icp/blob/master/icp.py
-# import math
-# import numpy as np
-# from sklearn.neighbors import NearestNeighbors
-
-
 import math
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -80,8 +74,8 @@ def icp(reference_points, points, max_iterations=100, distance_threshold=0.3, co
     An implementation of the Iterative Closest Point algorithm that matches a set of M 2D points to another set
     of N 2D (reference) points.
 
-    :param points: the point that should be aligned to the reference_points set as a numpy array (M x 2)
     :param reference_points: the reference point set as a numpy array (N x 2)
+    :param points: the point that should be aligned to the reference_points set as a numpy array (M x 2)
     :param max_iterations: the maximum number of iteration to be executed
     :param distance_threshold: the distance threshold between two points in order to be considered as a pair
     :param convergence_translation_threshold: the threshold for the translation parameters (x and y) for the
@@ -106,7 +100,6 @@ def icp(reference_points, points, max_iterations=100, distance_threshold=0.3, co
 
         distances, indices = nbrs.kneighbors(points)
         for nn_index in range(len(distances)):
-            print(distances[nn_index][0])
             if distances[nn_index][0] < distance_threshold:
                 closest_point_pairs.append((points[nn_index], reference_points[indices[nn_index][0]]))
 
