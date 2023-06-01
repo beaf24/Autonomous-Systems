@@ -49,7 +49,7 @@ def crop_and_resize_images(pgm_image_path, png_image_path):
     print("Target size:", target_size)
 
     # Resize the pmg images to the "target size" (size of the png image)
-    resized_pgm = cv2.resize(rotated_pgm, target_size)
+    resized_pgm = cv2.resize(rotated_pgm, target_size, interpolation=cv2.INTER_NEAREST)
   
     # Return the cropped and resized images as NumPy arrays
     return np.array(resized_pgm), np.array(cropped_png)
