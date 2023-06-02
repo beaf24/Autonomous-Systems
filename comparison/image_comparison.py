@@ -91,57 +91,94 @@ def ADNN(ground_truth, X, metric:str = "cosine"):
 	adnn = np.sum(neigh_dist)/neigh_dist.shape[0]
 	return adnn
 
+def get_compare(groud_truth_file: str, image_file:str, resolution:float):
+	# Open images and convert to grayscale and array
+	groud_truth = np.array(Image.open(groud_truth_file).convert("L"))
+	image = np.array(Image.open(image_file).convert("L"))
 
-# gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
-gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "pgm_cropped_dinis.png"))
-occupancy = np.array(Image.open(os.getcwd() + "/comparison/" + "png_resized_dinis.png"))#[:, :, 0]
-mse(gmapping, occupancy)
-# print(np.unique(occupancy))
-pc_gmapping = np.argwhere(gmapping <= 50)
-pc_occupancy = np.argwhere(occupancy <= 50)
+	# Find positions of interest
+	pc_ground_truth = np.argwhere(groud_truth <= 100)*resolution
+	pc_image = np.argwhere(image <= 100)*resolution
 
-# print(pc_occupancy[:,0] - pc_occupancy[:,0].min())
+	# Adjust to resolution
+	map_ground_truth = np.int0(pc_ground_truth/resolution)
+	map_image = np.int0(pc_image/resolution)
 
-## CONFIRMATION
-confirm_g = np.zeros(gmapping.shape)
-confirm_g[pc_gmapping[:,0], pc_gmapping[:,1]] = 1
+	# Confirm positions of interest
+	compare_map = np.zeros((max(map_ground_truth[:,0].max(), map_image[:,0].max())+1, max(map_ground_truth[:,1].max(), map_image[:,1].max())+1))
+	compare_map[map_image[:,0] - map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 1
+	compare_map[map_ground_truth[:,0]- map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 2
 
-confirm_o = np.zeros(occupancy.shape)
-confirm_o[pc_occupancy[:,0], pc_occupancy[:,1]] = 1
+	# Iterative closest point
+	transformation_history, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=10, point_pairs_threshold=100, verbose=True)
+	map_new_image = np.int0(new_pc_image/resolution)
 
-# compare_map = np.zeros((max(occupancy.shape[0], gmapping.shape[0]), max(occupancy.shape[1], gmapping.shape[1])))
-compare_map = np.zeros((max(pc_occupancy[:,0].max(), pc_gmapping[:,0].max())+1, max(pc_occupancy[:,1].max(), pc_gmapping[:,1].max())+1))
-compare_map[pc_gmapping[:,0] - pc_gmapping[:,0].min(), pc_gmapping[:,1]- pc_gmapping[:,1].min()] = 1
-compare_map[pc_occupancy[:,0]- pc_occupancy[:,0].min(), pc_occupancy[:,1]- pc_occupancy[:,1].min()] = 2
+	# Confirm transformation
+	compare_map = np.zeros((max(map_image[:,0].max(), map_new_image[:,0].max(), map_ground_truth[:,0].max())+1, max(map_image[:,1].max(), map_new_image[:,1].max(), map_ground_truth[:,1].max())+1))
+	compare_map[map_ground_truth[:,0] - map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 1
+	# compare_map[map_image[:,0]- map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 2
+	compare_map[(map_new_image[:,0]-map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())] = 3
+	plt.imshow(compare_map)
+	plt.show()
+
+	# Metrics
+	adnn = ADNN(pc_ground_truth, new_pc_image, metric = "euclidean")
+	msdnn = MSDNN(pc_ground_truth, new_pc_image, metric = "euclidean")
+	print("ADDN: " + str(adnn))
+	print("MSDDN: " + str(msdnn))
+
+# # gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
+# gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "pgm_cropped_dinis.png"))
+# occupancy = np.array(Image.open(os.getcwd() + "/comparison/" + "png_resized_dinis.png"))#[:, :, 0]
+# mse(gmapping, occupancy)
+# # print(np.unique(occupancy))
+# pc_gmapping = np.argwhere(gmapping <= 50)
+# pc_occupancy = np.argwhere(occupancy <= 50)
+
+# # print(pc_occupancy[:,0] - pc_occupancy[:,0].min())
+
+# ## CONFIRMATION
+# confirm_g = np.zeros(gmapping.shape)
+# confirm_g[pc_gmapping[:,0], pc_gmapping[:,1]] = 1
+
+# confirm_o = np.zeros(occupancy.shape)
+# confirm_o[pc_occupancy[:,0], pc_occupancy[:,1]] = 1
+
+# # compare_map = np.zeros((max(occupancy.shape[0], gmapping.shape[0]), max(occupancy.shape[1], gmapping.shape[1])))
+# compare_map = np.zeros((max(pc_occupancy[:,0].max(), pc_gmapping[:,0].max())+1, max(pc_occupancy[:,1].max(), pc_gmapping[:,1].max())+1))
+# compare_map[pc_gmapping[:,0] - pc_gmapping[:,0].min(), pc_gmapping[:,1]- pc_gmapping[:,1].min()] = 1
+# compare_map[pc_occupancy[:,0]- pc_occupancy[:,0].min(), pc_occupancy[:,1]- pc_occupancy[:,1].min()] = 2
+
+# # plt.imshow(compare_map)
+# # plt.show()
+
+# ## CONVERT TO 3D DATA (for ICP)
+# # final_gmapping = np.zeros((pc_gmapping.shape[0], 3))
+# # final_gmapping[:, 0:2] = pc_gmapping
+# # final_occupancy = np.zeros((pc_occupancy.shape[0], 3))
+# # final_occupancy[:, 0:2] = pc_occupancy[:, 0:2]
+# # print(final_occupancy)
+# print(pc_gmapping.shape)
+# print(pc_occupancy.shape)
+# transformation_history, new_pc_occupancy = icp(pc_gmapping*0.05, pc_occupancy*0.05, verbose=True)
+# print(transformation_history, new_pc_occupancy-pc_occupancy)
+# # iterative_closest_point(pc_gmapping, pc_occupancy)
+
+# print(np.int0(new_pc_occupancy[:,0]- new_pc_occupancy[:,0].min()))
+
+# compare_map = np.zeros((np.int0(max(pc_occupancy[:,0].max(), new_pc_occupancy[:,0].max()/0.05, pc_gmapping[:,0].max()))+1, np.int0(max(pc_occupancy[:,1].max(), new_pc_occupancy[:,1].max()/0.05, pc_gmapping[:,1].max()))+1))
+# compare_map[pc_gmapping[:,0] - pc_gmapping[:,0].min(), pc_gmapping[:,1]- pc_gmapping[:,1].min()] = 1
+# compare_map[pc_occupancy[:,0]- pc_occupancy[:,0].min(), pc_occupancy[:,1]- pc_occupancy[:,1].min()] = 2
+# compare_map[np.int0((new_pc_occupancy[:,0]-new_pc_occupancy[:,0].min())/0.05), np.int0((new_pc_occupancy[:,1] - new_pc_occupancy[:,1].min())/0.05)] = 3
 
 # plt.imshow(compare_map)
 # plt.show()
 
-## CONVERT TO 3D DATA (for ICP)
-# final_gmapping = np.zeros((pc_gmapping.shape[0], 3))
-# final_gmapping[:, 0:2] = pc_gmapping
-# final_occupancy = np.zeros((pc_occupancy.shape[0], 3))
-# final_occupancy[:, 0:2] = pc_occupancy[:, 0:2]
-# print(final_occupancy)
-print(pc_gmapping.shape)
-print(pc_occupancy.shape)
-transformation_history, new_pc_occupancy = icp(pc_gmapping*0.05, pc_occupancy*0.05, verbose=True)
-print(transformation_history, new_pc_occupancy-pc_occupancy)
-# iterative_closest_point(pc_gmapping, pc_occupancy)
-
-print(np.int0(new_pc_occupancy[:,0]- new_pc_occupancy[:,0].min()))
-
-compare_map = np.zeros((np.int0(max(pc_occupancy[:,0].max(), new_pc_occupancy[:,0].max()/0.05, pc_gmapping[:,0].max()))+1, np.int0(max(pc_occupancy[:,1].max(), new_pc_occupancy[:,1].max()/0.05, pc_gmapping[:,1].max()))+1))
-compare_map[pc_gmapping[:,0] - pc_gmapping[:,0].min(), pc_gmapping[:,1]- pc_gmapping[:,1].min()] = 1
-compare_map[pc_occupancy[:,0]- pc_occupancy[:,0].min(), pc_occupancy[:,1]- pc_occupancy[:,1].min()] = 2
-compare_map[np.int0((new_pc_occupancy[:,0]-new_pc_occupancy[:,0].min())/0.05), np.int0((new_pc_occupancy[:,1] - new_pc_occupancy[:,1].min())/0.05)] = 3
-
-plt.imshow(compare_map)
-plt.show()
-
-adnn = ADNN(pc_gmapping*0.05, new_pc_occupancy, metric = "euclidean")
-msdnn = MSDNN(pc_gmapping*0.05, new_pc_occupancy, metric = "euclidean")
-print("ADDN: " + str(adnn))
-print("MSDDN: " + str(msdnn))
+# adnn = ADNN(pc_gmapping*0.05, new_pc_occupancy, metric = "euclidean")
+# msdnn = MSDNN(pc_gmapping*0.05, new_pc_occupancy, metric = "euclidean")
+# print("ADDN: " + str(adnn))
+# print("MSDDN: " + str(msdnn))
 
 # compare_images(gmapping, occupancy, "title")
+
+get_compare(os.getcwd() + "/comparison/" + "piso5.png", os.getcwd() + "/comparison/" + "piso5_Melhorado.png", resolution=0.05)
