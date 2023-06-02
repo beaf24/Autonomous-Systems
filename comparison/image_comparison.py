@@ -181,4 +181,4 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 
 # compare_images(gmapping, occupancy, "title")
 
-get_compare(os.getcwd() + "/comparison/" + "piso5.png", os.getcwd() + "/comparison/" + "piso5_Melhorado.png", resolution=0.05)
+get_compare(os.getcwd() + "/piso5.png", os.getcwd() + "/Figure_1.png", resolution=0.05)
