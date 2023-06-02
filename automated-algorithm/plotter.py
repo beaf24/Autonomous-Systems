@@ -46,6 +46,13 @@ for cell in data:
 
 prob_map = 1 - 1/(1+np.exp(mapp))
 
+
+# adicionado para thresholding
+prob_map[prob_map>=0.7]=1
+prob_map[prob_map<=0.3]=0
+prob_map[prob_map>0.3 and prob_map<0.7]=0.5
+
+
 fig, ax = plt.subplots()
 im = ax.matshow(prob_map)
 plt.colorbar(im)
