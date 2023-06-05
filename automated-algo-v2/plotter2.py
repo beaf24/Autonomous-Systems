@@ -18,6 +18,7 @@ plt.figure(frameon=False)
 ax.set_axis_off()
 fig.add_axes(ax)
 im = ax.matshow(prob_map, cmap="Greys")
+plt.savefig("Map algorithm.png")
 plt.show()
 
 
