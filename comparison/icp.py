@@ -106,7 +106,6 @@ def icp(reference_points, points, max_iterations=100, distance_threshold=0.3, co
 
         distances, indices = nbrs.kneighbors(points)
         for nn_index in range(len(distances)):
-            print(distances[nn_index][0])
             if distances[nn_index][0] < distance_threshold:
                 closest_point_pairs.append((points[nn_index], reference_points[indices[nn_index][0]]))
 
