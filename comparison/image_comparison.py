@@ -184,7 +184,7 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 # compare_images(gmapping, occupancy, "title")
 
 if __name__ == "__main__":
-	gmapping = "/comparison/" + input("Gmapping file: ")
-	map = "/comparison/" + input("Map to compare: ")
+	gmapping = "/maps/" + input("Gmapping file: ")
+	map = "/maps/" + input("Map to compare: ")
 	res = input("resolution: ")
 	get_compare(os.getcwd() + gmapping, os.getcwd() + map, resolution=float(res))
