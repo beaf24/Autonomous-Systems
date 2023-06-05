@@ -100,6 +100,7 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	pc_ground_truth = np.argwhere(groud_truth <= 100)*resolution
 	pc_image = np.argwhere(image <= 100)*resolution
 
+
 	# Adjust to resolution
 	map_ground_truth = np.int0(pc_ground_truth/resolution)
 	map_image = np.int0(pc_image/resolution)
@@ -110,7 +111,7 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	compare_map[map_ground_truth[:,0]- map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 2
 
 	# Iterative closest point
-	transformation_history, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=10, point_pairs_threshold=100, verbose=True)
+	transformation_history, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 500, max_iterations=1000000, point_pairs_threshold=2000, verbose=True)
 	map_new_image = np.int0(new_pc_image/resolution)
 
 	# Confirm transformation
@@ -126,6 +127,7 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	msdnn = MSDNN(pc_ground_truth, new_pc_image, metric = "euclidean")
 	print("ADDN: " + str(adnn))
 	print("MSDDN: " + str(msdnn))
+	print(pc_ground_truth.shape, pc_image.shape)
 
 # # gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
 # gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "pgm_cropped_dinis.png"))
@@ -181,4 +183,8 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 
 # compare_images(gmapping, occupancy, "title")
 
-get_compare(os.getcwd() + "/piso5.png", os.getcwd() + "/Figure_1.png", resolution=0.05)
+if __name__ == "__main__":
+	gmapping = "/comparison/" + input("Gmapping file: ")
+	map = "/comparison/" + input("Map to compare: ")
+	res = input("resolution: ")
+	get_compare(os.getcwd() + gmapping, os.getcwd() + map, resolution=float(res))
