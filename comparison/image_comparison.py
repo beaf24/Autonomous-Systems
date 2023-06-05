@@ -106,28 +106,31 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	map_image = np.int0(pc_image/resolution)
 
 	# Confirm positions of interest
-	compare_map = np.zeros((max(map_ground_truth[:,0].max(), map_image[:,0].max())+1, max(map_ground_truth[:,1].max(), map_image[:,1].max())+1))
-	compare_map[map_image[:,0] - map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 1
-	compare_map[map_ground_truth[:,0]- map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 2
+	# compare_map = np.zeros(((max(map_ground_truth[:,0].max() - map_ground_truth[:,0].min(), map_image[:,0].max())-map_image[:,0].min()) +1, max(map_ground_truth[:,1].max()-map_ground_truth[:,1].min(), map_image[:,1].max()-map_image[:,1].min())+1))
+	# compare_map[map_image[:,0] - map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 1
+	# compare_map[map_ground_truth[:,0]- map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 2
 
 	# Iterative closest point
-	transformation_history, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 500, max_iterations=1000000, point_pairs_threshold=2000, verbose=True)
+	transformation_history, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=100, point_pairs_threshold=2000, verbose=True)
 	map_new_image = np.int0(new_pc_image/resolution)
 
 	# Confirm transformation
-	compare_map = np.zeros((max(map_image[:,0].max(), map_new_image[:,0].max(), map_ground_truth[:,0].max())+1, max(map_image[:,1].max(), map_new_image[:,1].max(), map_ground_truth[:,1].max())+1))
+	compare_map = np.zeros(((max(map_ground_truth[:,0].max() - map_ground_truth[:,0].min(), map_new_image[:,0].max())-map_new_image[:,0].min()) +1, max(map_ground_truth[:,1].max()-map_ground_truth[:,1].min(), map_new_image[:,1].max()-map_new_image[:,1].min())+1))
 	compare_map[map_ground_truth[:,0] - map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 1
-	# compare_map[map_image[:,0]- map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 2
+	#compare_map[map_image[:,0]- map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 2
 	compare_map[(map_new_image[:,0]-map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())] = 3
 	plt.imshow(compare_map)
 	plt.show()
 
 	# Metrics
-	adnn = ADNN(pc_ground_truth, new_pc_image, metric = "euclidean")
-	msdnn = MSDNN(pc_ground_truth, new_pc_image, metric = "euclidean")
-	print("ADDN: " + str(adnn))
-	print("MSDDN: " + str(msdnn))
-	print(pc_ground_truth.shape, pc_image.shape)
+	adnn_eu = ADNN(pc_ground_truth, new_pc_image, metric = "euclidean")
+	msdnn_eu = MSDNN(pc_ground_truth, new_pc_image, metric = "euclidean")
+	adnn_cos = ADNN(pc_ground_truth, new_pc_image, metric = "cosine")
+	msdnn_cos = MSDNN(pc_ground_truth, new_pc_image, metric = "cosine")
+	print("ADDN euclidean: " + str(adnn_eu))
+	print("MSDDN euclidean: " + str(msdnn_eu))
+	print("ADDN cosine: " + str(adnn_cos))
+	print("MSDDN cosine: " + str(msdnn_cos))
 
 # # gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
 # gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "pgm_cropped_dinis.png"))
@@ -184,7 +187,7 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 # compare_images(gmapping, occupancy, "title")
 
 if __name__ == "__main__":
-	gmapping = "/comparison/" + input("Gmapping file: ")
-	map = "/comparison/" + input("Map to compare: ")
+	gmapping = "/maps/" + input("Gmapping file: ")
+	map = "/maps/" + input("Map to compare: ")
 	res = input("resolution: ")
 	get_compare(os.getcwd() + gmapping, os.getcwd() + map, resolution=float(res))
