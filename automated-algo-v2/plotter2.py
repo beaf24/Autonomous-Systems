@@ -13,12 +13,14 @@ prob_map[prob_map>=0.7]=1
 prob_map[prob_map<=0.3]=0
 prob_map[(prob_map > 0.3) & (prob_map < 0.7)] = 0.5
 
+
 fig, ax = plt.subplots()
-plt.figure(frameon=False)
+# plt.figure(frameon=False)
 ax.set_axis_off()
-fig.add_axes(ax)
+# fig.add_axes(ax)
 im = ax.matshow(prob_map, cmap="Greys")
-plt.savefig("Map algorithm.png")
+IM = Image.fromarray(255-np.uint8(prob_map*255))
+IM.save("map_algo.png")
 plt.show()
 
 
