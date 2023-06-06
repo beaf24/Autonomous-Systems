@@ -154,10 +154,10 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	msdnn_eu = MSDNN(pc_ground_truth, new_pc_image, metric = "euclidean")
 	adnn_cos = ADNN(pc_ground_truth, new_pc_image, metric = "cosine")
 	msdnn_cos = MSDNN(pc_ground_truth, new_pc_image, metric = "cosine")
-	print("ADDN euclidean: " + str(adnn_eu))
-	print("MSDDN euclidean: " + str(msdnn_eu))
-	print("ADDN cosine: " + str(adnn_cos))
-	print("MSDDN cosine: " + str(msdnn_cos))
+	# print("ADDN euclidean: " + str(adnn_eu))
+	# print("MSDDN euclidean: " + str(msdnn_eu))
+	# print("ADDN cosine: " + str(adnn_cos))
+	# print("MSDDN cosine: " + str(msdnn_cos))
 
 	## Classification problem
 	# Matrices
@@ -172,7 +172,7 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	# Confusion matrix
 	cm = confusion_matrix(gt_class.flatten(), algo_class.flatten())
 	error = 1 - accuracy_score(gt_class.flatten(), algo_class.flatten())
-	print(cm, error)
+	# print(cm, error)
 
 	return adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error
 
