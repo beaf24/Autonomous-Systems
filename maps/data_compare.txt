@@ -1,0 +1,2 @@
+Name      Resolution     ADDN_eu        MSDDN_eu       ADDN_cos       MSDDN_cos      Error
+piso5     10             0.272988       0.192021     1.297807e-09   9.930093e-18     0.120595

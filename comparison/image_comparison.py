@@ -1,5 +1,6 @@
 # import the necessary packages
 from skimage.metrics import structural_similarity as ssim
+from sklearn.metrics import confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
@@ -7,6 +8,7 @@ import os
 from simpleicp import PointCloud, SimpleICP
 from PIL import Image
 from icp import icp
+import copy
 
 ## 1.
 # Aplicar o algoritmo Iterative closest point (ICP) para obter a matriz de transformação que permite obter o
@@ -100,18 +102,23 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	pc_ground_truth = np.argwhere(groud_truth <= 100)*resolution
 	pc_image = np.argwhere(image <= 100)*resolution
 
+	pc_ground_truth_free = np.argwhere(groud_truth >= 250)*resolution
+	pc_image_free = np.argwhere(image >= 250)*resolution
 
 	# Adjust to resolution
 	map_ground_truth = np.int0(pc_ground_truth/resolution)
 	map_image = np.int0(pc_image/resolution)
+
+	map_ground_truth_free = np.int0(pc_ground_truth_free/resolution)
 
 	# Confirm positions of interest
 	# compare_map = np.zeros(((max(map_ground_truth[:,0].max() - map_ground_truth[:,0].min(), map_image[:,0].max())-map_image[:,0].min()) +1, max(map_ground_truth[:,1].max()-map_ground_truth[:,1].min(), map_image[:,1].max()-map_image[:,1].min())+1))
 	# compare_map[map_image[:,0] - map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 1
 	# compare_map[map_ground_truth[:,0]- map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 2
 
+	## OCCUPIED
 	# Iterative closest point
-	transformation_history, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=100, point_pairs_threshold=2000, verbose=True)
+	_, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=100, point_pairs_threshold=2000, verbose=True)
 	map_new_image = np.int0(new_pc_image/resolution)
 
 	# Confirm transformation
@@ -120,6 +127,26 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	#compare_map[map_image[:,0]- map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 2
 	compare_map[(map_new_image[:,0]-map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())] = 3
 	plt.imshow(compare_map)
+	plt.show()
+
+	## FREE
+	# Iterative closest point
+	_, new_pc_image_free = icp(pc_ground_truth_free, pc_image_free, distance_threshold= 100, max_iterations=100, point_pairs_threshold=2000, verbose=True)
+	map_new_image_free = np.int0(new_pc_image_free/resolution)
+
+	# Confirm transformation
+	compare_map_free = np.zeros(((max(map_ground_truth_free[:,0].max() - map_ground_truth_free[:,0].min(), map_new_image_free[:,0].max())-map_new_image_free[:,0].min()) +2, max(map_ground_truth_free[:,1].max()-map_ground_truth_free[:,1].min(), map_new_image_free[:,1].max()-map_new_image_free[:,1].min())+2))
+	gt_class = copy.deepcopy(compare_map_free)
+	algo_class = copy.deepcopy(compare_map_free)
+	compare_map_free[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min(), map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()] = 1
+	compare_map_free[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min()+1, map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()] = 1
+	compare_map_free[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min(), map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()+1] = 1
+
+	compare_map_free[(map_new_image_free[:,0]-map_new_image_free[:,0].min()), (map_new_image_free[:,1] - map_new_image_free[:,1].min())] = 3
+	compare_map_free[(map_new_image_free[:,0]-map_new_image_free[:,0].min()+1), (map_new_image_free[:,1] - map_new_image_free[:,1].min())] = 3
+	compare_map_free[(map_new_image_free[:,0]-map_new_image_free[:,0].min()), (map_new_image_free[:,1] - map_new_image_free[:,1].min())+1] = 3
+
+	plt.imshow(compare_map_free)
 	plt.show()
 
 	# Metrics
@@ -131,6 +158,23 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	print("MSDDN euclidean: " + str(msdnn_eu))
 	print("ADDN cosine: " + str(adnn_cos))
 	print("MSDDN cosine: " + str(msdnn_cos))
+
+	## Classification problem
+	# Matrices
+	gt_class[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min(), map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()] = 1
+	gt_class[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min()+1, map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()] = 1
+	gt_class[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min(), map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()+1] = 1
+
+	algo_class[(map_new_image_free[:,0]-map_new_image_free[:,0].min()), (map_new_image_free[:,1] - map_new_image_free[:,1].min())] = 1
+	algo_class[(map_new_image_free[:,0]-map_new_image_free[:,0].min()+1), (map_new_image_free[:,1] - map_new_image_free[:,1].min())] = 1
+	algo_class[(map_new_image_free[:,0]-map_new_image_free[:,0].min()), (map_new_image_free[:,1] - map_new_image_free[:,1].min())+1] = 1
+
+	# Confusion matrix
+	cm = confusion_matrix(gt_class.flatten(), algo_class.flatten())
+	error = 1 - accuracy_score(gt_class.flatten(), algo_class.flatten())
+	print(cm, error)
+
+	return adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error
 
 # # gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
 # gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "pgm_cropped_dinis.png"))
@@ -187,7 +231,21 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 # compare_images(gmapping, occupancy, "title")
 
 if __name__ == "__main__":
-	gmapping = "/maps/" + input("Gmapping file: ")
-	map = "/maps/" + input("Map to compare: ")
-	res = input("resolution: ")
-	get_compare(os.getcwd() + gmapping, os.getcwd() + map, resolution=float(res))
+	name = input("Mapping file: ")
+	res_cm = input("resolution (cm): ")
+
+	gmapping = "/maps/gmapping_" + str(name) + "_" + str(res_cm) + ".png"
+	map = "/maps/algo_" + str(name) + "_" + str(res_cm) + ".png"
+	adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error = get_compare(os.getcwd() + gmapping, os.getcwd() + map, resolution=float(1/int(res_cm)))
+
+	save = input("save? [Y/n]")
+	if save == "Y":
+		if os.path.exists("maps/data_compare.txt"):
+			file = open("maps/data_compare.txt", "a")
+		else:
+			file = open("maps/data_compare.txt", "x")
+			file.write("Name".ljust(10) + "Resolution".ljust(15) + "ADDN_eu".ljust(15) + "MSDDN_eu".ljust(15) + "ADDN_cos".ljust(15) + "MSDDN_cos".ljust(15) + "Error" + "\n")
+		
+		file.write(name.ljust(10) + res_cm .ljust(13) + str(f'{adnn_eu:10f}').ljust(15) + str(f'{msdnn_eu:10f}').ljust(15) + str(f'{adnn_cos:8e}').ljust(15) + str(f'{msdnn_cos:8e}').ljust(15) + str(f'{error:10f}') + "\n")
+	
+	file.close()
