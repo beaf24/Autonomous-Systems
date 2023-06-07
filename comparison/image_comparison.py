@@ -102,8 +102,8 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	pc_ground_truth = np.argwhere(groud_truth <= 100)*resolution
 	pc_image = np.argwhere(image <= 100)*resolution
 
-	pc_ground_truth_free = np.argwhere(groud_truth >= 250)*resolution
-	pc_image_free = np.argwhere(image >= 250)*resolution
+	pc_ground_truth_free = np.argwhere((groud_truth >= 250) | (groud_truth <= 100))*resolution
+	pc_image_free = np.argwhere((image >= 250) | (image <= 100))*resolution
 
 	# Adjust to resolution
 	map_ground_truth = np.int0(pc_ground_truth/resolution)
@@ -131,7 +131,7 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 
 	## FREE
 	# Iterative closest point
-	_, new_pc_image_free = icp(pc_ground_truth_free, pc_image_free, distance_threshold= 100, max_iterations=100, point_pairs_threshold=2000, verbose=True)
+	_, new_pc_image_free = icp(pc_ground_truth_free, pc_image_free, distance_threshold= 100, max_iterations=200, point_pairs_threshold=2000, verbose=True)
 	map_new_image_free = np.int0(new_pc_image_free/resolution)
 
 	# Confirm transformation
@@ -246,6 +246,6 @@ if __name__ == "__main__":
 			file = open("maps/data_compare.txt", "x")
 			file.write("Name".ljust(10) + "Resolution".ljust(15) + "ADDN_eu".ljust(15) + "MSDDN_eu".ljust(15) + "ADDN_cos".ljust(15) + "MSDDN_cos".ljust(15) + "Error" + "\n")
 		
-		file.write(name.ljust(10) + res_cm .ljust(13) + str(f'{adnn_eu:10f}').ljust(15) + str(f'{msdnn_eu:10f}').ljust(15) + str(f'{adnn_cos:8e}').ljust(15) + str(f'{msdnn_cos:8e}').ljust(15) + str(f'{error:10f}') + "\n")
+		file.write(name.ljust(10) + res_cm .ljust(13) + str(f'{adnn_eu:10f}').ljust(15) + str(f'{msdnn_eu:10f}').ljust(15) + str(f'{adnn_cos:6e}').ljust(15) + str(f'{msdnn_cos:6e}').ljust(15) + str(f'{error:10f}') + "\n")
+		file.close()
 	
-	file.close()
