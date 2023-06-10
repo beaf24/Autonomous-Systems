@@ -8,6 +8,8 @@ import math
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
+import os
+
 
 def euclidean_distance(point1, point2):
     """
@@ -95,6 +97,8 @@ def icp(reference_points, points, max_iterations=100, distance_threshold=0.3, co
     """
 
     transformation_history = []
+
+    os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 
     nbrs = NearestNeighbors(n_neighbors=1, algorithm='kd_tree').fit(reference_points)
 

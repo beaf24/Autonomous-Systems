@@ -106,10 +106,10 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	pc_image_free = np.argwhere((image >= 250) | (image <= 100))*resolution
 
 	# Adjust to resolution
-	map_ground_truth = np.int0(pc_ground_truth/resolution)
-	map_image = np.int0(pc_image/resolution)
+	map_ground_truth = np.intp(pc_ground_truth/resolution)
+	map_image = np.intp(pc_image/resolution)
 
-	map_ground_truth_free = np.int0(pc_ground_truth_free/resolution)
+	map_ground_truth_free = np.intp(pc_ground_truth_free/resolution)
 
 	# Confirm positions of interest
 	# compare_map = np.zeros(((max(map_ground_truth[:,0].max() - map_ground_truth[:,0].min(), map_image[:,0].max())-map_image[:,0].min()) +1, max(map_ground_truth[:,1].max()-map_ground_truth[:,1].min(), map_image[:,1].max()-map_image[:,1].min())+1))
@@ -118,26 +118,31 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 
 	## OCCUPIED
 	# Iterative closest point
-	_, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=100, point_pairs_threshold=2000, verbose=True)
-	map_new_image = np.int0(new_pc_image/resolution)
+	_, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=100, point_pairs_threshold=2000, convergence_rotation_threshold=1e-4, verbose=True)
+	map_new_image = np.intp(new_pc_image/resolution)
 
 	# Confirm transformation
 	compare_map = np.zeros(((max(map_ground_truth[:,0].max() - map_ground_truth[:,0].min(), map_new_image[:,0].max())-map_new_image[:,0].min()) +1, max(map_ground_truth[:,1].max()-map_ground_truth[:,1].min(), map_new_image[:,1].max()-map_new_image[:,1].min())+1))
+	
 	compare_map[map_ground_truth[:,0] - map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 1
 	#compare_map[map_image[:,0]- map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 2
+	
 	compare_map[(map_new_image[:,0]-map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())] = 3
+	
 	plt.imshow(compare_map)
 	plt.show()
 
 	## FREE
 	# Iterative closest point
 	_, new_pc_image_free = icp(pc_ground_truth_free, pc_image_free, distance_threshold= 100, max_iterations=200, point_pairs_threshold=2000, verbose=True)
-	map_new_image_free = np.int0(new_pc_image_free/resolution)
+	map_new_image_free = np.intp(new_pc_image_free/resolution)
 
 	# Confirm transformation
 	compare_map_free = np.zeros(((max(map_ground_truth_free[:,0].max() - map_ground_truth_free[:,0].min(), map_new_image_free[:,0].max())-map_new_image_free[:,0].min()) +2, max(map_ground_truth_free[:,1].max()-map_ground_truth_free[:,1].min(), map_new_image_free[:,1].max()-map_new_image_free[:,1].min())+2))
+	
 	gt_class = copy.deepcopy(compare_map_free)
 	algo_class = copy.deepcopy(compare_map_free)
+	
 	compare_map_free[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min(), map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()] = 1
 	compare_map_free[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min()+1, map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()] = 1
 	compare_map_free[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min(), map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()+1] = 1
@@ -213,12 +218,12 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 # print(transformation_history, new_pc_occupancy-pc_occupancy)
 # # iterative_closest_point(pc_gmapping, pc_occupancy)
 
-# print(np.int0(new_pc_occupancy[:,0]- new_pc_occupancy[:,0].min()))
+# print(np.intp(new_pc_occupancy[:,0]- new_pc_occupancy[:,0].min()))
 
-# compare_map = np.zeros((np.int0(max(pc_occupancy[:,0].max(), new_pc_occupancy[:,0].max()/0.05, pc_gmapping[:,0].max()))+1, np.int0(max(pc_occupancy[:,1].max(), new_pc_occupancy[:,1].max()/0.05, pc_gmapping[:,1].max()))+1))
+# compare_map = np.zeros((np.intp(max(pc_occupancy[:,0].max(), new_pc_occupancy[:,0].max()/0.05, pc_gmapping[:,0].max()))+1, np.intp(max(pc_occupancy[:,1].max(), new_pc_occupancy[:,1].max()/0.05, pc_gmapping[:,1].max()))+1))
 # compare_map[pc_gmapping[:,0] - pc_gmapping[:,0].min(), pc_gmapping[:,1]- pc_gmapping[:,1].min()] = 1
 # compare_map[pc_occupancy[:,0]- pc_occupancy[:,0].min(), pc_occupancy[:,1]- pc_occupancy[:,1].min()] = 2
-# compare_map[np.int0((new_pc_occupancy[:,0]-new_pc_occupancy[:,0].min())/0.05), np.int0((new_pc_occupancy[:,1] - new_pc_occupancy[:,1].min())/0.05)] = 3
+# compare_map[np.intp((new_pc_occupancy[:,0]-new_pc_occupancy[:,0].min())/0.05), np.intp((new_pc_occupancy[:,1] - new_pc_occupancy[:,1].min())/0.05)] = 3
 
 # plt.imshow(compare_map)
 # plt.show()
@@ -232,13 +237,17 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 
 if __name__ == "__main__":
 	name = input("Mapping file: ")
-	res_cm = input("resolution (cm): ")
+	res_cm = input("Resolution (cm): ")
 
 	gmapping = "/maps/gmapping_" + str(name) + "_" + str(res_cm) + ".png"
 	map = "/maps/algo_" + str(name) + "_" + str(res_cm) + ".png"
-	adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error = get_compare(os.getcwd() + gmapping, os.getcwd() + map, resolution=float(1/int(res_cm)))
+	try:
+		adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error = get_compare(os.getcwd() + gmapping, os.getcwd() + map, resolution=float(1/int(res_cm)))
+	except:
+		print("Invalid input")
+		quit()
 
-	save = input("save? [Y/n]")
+	save = input("Y to save: ")
 	if save == "Y":
 		if os.path.exists("maps/data_compare.txt"):
 			file = open("maps/data_compare.txt", "a")
@@ -246,6 +255,8 @@ if __name__ == "__main__":
 			file = open("maps/data_compare.txt", "x")
 			file.write("Name".ljust(10) + "Resolution".ljust(15) + "ADDN_eu".ljust(15) + "MSDDN_eu".ljust(15) + "ADDN_cos".ljust(15) + "MSDDN_cos".ljust(15) + "Error" + "\n")
 		
-		file.write(name.ljust(10) + res_cm .ljust(13) + str(f'{adnn_eu:10f}').ljust(15) + str(f'{msdnn_eu:10f}').ljust(15) + str(f'{adnn_cos:6e}').ljust(15) + str(f'{msdnn_cos:6e}').ljust(15) + str(f'{error:10f}') + "\n")
+		file.write(name.ljust(10) + res_cm.ljust(13) + str(f'{adnn_eu:10f}').ljust(15) + str(f'{msdnn_eu:10f}').ljust(15) + str(f'{adnn_cos:6e}').ljust(15) + str(f'{msdnn_cos:6e}').ljust(15) + str(f'{error:10f}') + "\n")
 		file.close()
+	else:
+		print("No values were saved, since 'Y' was not pressed.")
 	
