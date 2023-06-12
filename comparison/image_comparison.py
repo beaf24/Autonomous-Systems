@@ -99,17 +99,23 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	image = np.array(Image.open(image_file).convert("L"))
 
 	# Find positions of interest
-	pc_ground_truth = np.argwhere(groud_truth <= 100)*resolution
-	pc_image = np.argwhere(image <= 100)*resolution
+	## Ground truth
+	pc_ground_truth = np.argwhere((groud_truth >= 250) | (groud_truth <= 100))*resolution
+	pc_ground_truth_free = np.argwhere(groud_truth >= 250)*resolution
+	pc_ground_truth_occupied = np.argwhere(groud_truth <= 100)*resolution
 
-	pc_ground_truth_free = np.argwhere((groud_truth >= 250) | (groud_truth <= 100))*resolution
-	pc_image_free = np.argwhere((image >= 250) | (image <= 100))*resolution
-
+	## Algo
+	pc_image = np.argwhere((image >= 250) | (image <= 100))*resolution
+	pc_image_free = np.argwhere(image >= 250)*resolution
+	pc_image_occupied = np.argwhere(image <= 100)*resolution
+	
 	# Adjust to resolution
 	map_ground_truth = np.intp(pc_ground_truth/resolution)
 	map_image = np.intp(pc_image/resolution)
 
 	map_ground_truth_free = np.intp(pc_ground_truth_free/resolution)
+	map_ground_truth_occupied = np.intp(pc_ground_truth_occupied/resolution)
+
 
 	# Confirm positions of interest
 	# compare_map = np.zeros(((max(map_ground_truth[:,0].max() - map_ground_truth[:,0].min(), map_image[:,0].max())-map_image[:,0].min()) +1, max(map_ground_truth[:,1].max()-map_ground_truth[:,1].min(), map_image[:,1].max()-map_image[:,1].min())+1))
@@ -118,47 +124,82 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 
 	## OCCUPIED
 	# Iterative closest point
-	_, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=100, point_pairs_threshold=2000, convergence_rotation_threshold=1e-4, verbose=True)
-	map_new_image = np.intp(new_pc_image/resolution)
+	_, new_pc_image_occupied = icp(pc_ground_truth_occupied, pc_image_occupied, distance_threshold= 100, max_iterations=100, point_pairs_threshold=2000, convergence_rotation_threshold=1e-4, verbose=True)
+	map_new_image_occupied = np.intp(new_pc_image_occupied/resolution)
 
 	# Confirm transformation
-	compare_map = np.zeros(((max(map_ground_truth[:,0].max() - map_ground_truth[:,0].min(), map_new_image[:,0].max())-map_new_image[:,0].min()) +1, max(map_ground_truth[:,1].max()-map_ground_truth[:,1].min(), map_new_image[:,1].max()-map_new_image[:,1].min())+1))
+	compare_map = np.zeros(((max(map_ground_truth_occupied[:,0].max() - map_ground_truth_occupied[:,0].min(), map_new_image_occupied[:,0].max())-map_new_image_occupied[:,0].min()) +1, max(map_ground_truth_occupied[:,1].max()-map_ground_truth_occupied[:,1].min(), map_new_image_occupied[:,1].max()-map_new_image_occupied[:,1].min())+1))
 	
-	compare_map[map_ground_truth[:,0] - map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 1
+	compare_map[map_ground_truth_occupied[:,0] - map_ground_truth_occupied[:,0].min(), map_ground_truth_occupied[:,1]- map_ground_truth_occupied[:,1].min()] = 1
 	#compare_map[map_image[:,0]- map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 2
 	
-	compare_map[(map_new_image[:,0]-map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())] = 3
+	compare_map[(map_new_image_occupied[:,0]-map_new_image_occupied[:,0].min()), (map_new_image_occupied[:,1] - map_new_image_occupied[:,1].min())] = 3
 	
 	plt.imshow(compare_map)
 	plt.show()
 
-	## FREE
+	## TOTAL
 	# Iterative closest point
-	_, new_pc_image_free = icp(pc_ground_truth_free, pc_image_free, distance_threshold= 100, max_iterations=200, point_pairs_threshold=2000, verbose=True)
-	map_new_image_free = np.intp(new_pc_image_free/resolution)
+	trans2, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=200, point_pairs_threshold=2000, verbose=True)
+	map_new_image = np.intp(new_pc_image/resolution)
+
+	aligned_free = pc_image_free
+	aligned_occupied = pc_image_occupied
+
+	for story in np.arange(len(trans2)):
+		rot = trans2[story][0:2, 0:2]
+		translation_x = trans2[story][0,2]
+		translation_y = trans2[story][1,2]
+
+		aligned_free = np.dot(aligned_free, rot.T)
+		aligned_free[:, 0] += translation_x
+		aligned_free[:, 1] += translation_y
+
+		aligned_occupied = np.dot(aligned_occupied, rot.T)
+		aligned_occupied[:, 0] += translation_x
+		aligned_occupied[:, 1] += translation_y
+
+	aligned_free = np.intp(aligned_free/resolution)
+	aligned_occupied = np.intp(aligned_occupied/resolution)
 
 	# Confirm transformation
-	compare_map_free = np.zeros(((max(map_ground_truth_free[:,0].max() - map_ground_truth_free[:,0].min(), map_new_image_free[:,0].max())-map_new_image_free[:,0].min()) +2, max(map_ground_truth_free[:,1].max()-map_ground_truth_free[:,1].min(), map_new_image_free[:,1].max()-map_new_image_free[:,1].min())+2))
+	compare_map = np.zeros(((max(map_ground_truth[:,0].max() - map_ground_truth[:,0].min(), map_new_image[:,0].max()-map_new_image[:,0].min())) +2, max(map_ground_truth[:,1].max()-map_ground_truth[:,1].min(), map_new_image[:,1].max()-map_new_image[:,1].min())+2))
 	
-	gt_class = copy.deepcopy(compare_map_free)
-	algo_class = copy.deepcopy(compare_map_free)
+	prob_map = np.zeros(((max(aligned_free[:,0].max() - aligned_free[:,0].min(), aligned_occupied[:,0].max()-aligned_occupied[:,0].min())) +2, max(aligned_free[:,1].max()-aligned_free[:,1].min(), aligned_occupied[:,1].max()-aligned_occupied[:,1].min())+2))
 	
-	compare_map_free[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min(), map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()] = 1
-	compare_map_free[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min()+1, map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()] = 1
-	compare_map_free[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min(), map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()+1] = 1
+	gt_class = copy.deepcopy(compare_map)
+	gt_class_overall = copy.deepcopy(compare_map)
+	algo_class_overall = copy.deepcopy(compare_map)
+	algo_class = copy.deepcopy(compare_map)
 
-	compare_map_free[(map_new_image_free[:,0]-map_new_image_free[:,0].min()), (map_new_image_free[:,1] - map_new_image_free[:,1].min())] = 3
-	compare_map_free[(map_new_image_free[:,0]-map_new_image_free[:,0].min()+1), (map_new_image_free[:,1] - map_new_image_free[:,1].min())] = 3
-	compare_map_free[(map_new_image_free[:,0]-map_new_image_free[:,0].min()), (map_new_image_free[:,1] - map_new_image_free[:,1].min())+1] = 3
+	
+	compare_map[map_ground_truth[:,0] - map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 1
+	compare_map[map_ground_truth[:,0] - map_ground_truth[:,0].min()+1, map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 1
+	compare_map[map_ground_truth[:,0] - map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()+1] = 1
 
-	plt.imshow(compare_map_free)
+	compare_map[(map_new_image[:,0]- map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())] = 3
+	compare_map[(map_new_image[:,0]- map_new_image[:,0].min()+1), (map_new_image[:,1] - map_new_image[:,1].min())] = 3
+	compare_map[(map_new_image[:,0]- map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())+1] = 3
+
+	prob_map[(aligned_free[:,0]-aligned_free[:,0].min()), (aligned_free[:,1] - aligned_free[:,1].min())] = 1
+	prob_map[(aligned_free[:,0]-aligned_free[:,0].min()+1), (aligned_free[:,1] - aligned_free[:,1].min())] = 1
+	prob_map[(aligned_free[:,0]-aligned_free[:,0].min()), (aligned_free[:,1] - aligned_free[:,1].min())+1] = 1
+
+	prob_map[(aligned_occupied[:,0]-aligned_occupied[:,0].min()), (aligned_occupied[:,1] - aligned_occupied[:,1].min())] = 2
+	# prob_map[(aligned_occupied[:,0]-aligned_occupied[:,0].min()+1), (aligned_occupied[:,1] - aligned_occupied[:,1].min())] = 2
+	# prob_map[(aligned_occupied[:,0]-aligned_occupied[:,0].min()), (aligned_occupied[:,1] - aligned_occupied[:,1].min())+1] = 2
+
+	plt.imshow(prob_map)
+	plt.show()
+
+	plt.imshow(compare_map)
 	plt.show()
 
 	# Metrics
-	adnn_eu = ADNN(pc_ground_truth, new_pc_image, metric = "euclidean")
-	msdnn_eu = MSDNN(pc_ground_truth, new_pc_image, metric = "euclidean")
-	adnn_cos = ADNN(pc_ground_truth, new_pc_image, metric = "cosine")
-	msdnn_cos = MSDNN(pc_ground_truth, new_pc_image, metric = "cosine")
+	adnn_eu = ADNN(pc_ground_truth_occupied, new_pc_image_occupied, metric = "euclidean")
+	msdnn_eu = MSDNN(pc_ground_truth_occupied, new_pc_image_occupied, metric = "euclidean")
+	adnn_cos = ADNN(pc_ground_truth_occupied, new_pc_image_occupied, metric = "cosine")
+	msdnn_cos = MSDNN(pc_ground_truth_occupied, new_pc_image_occupied, metric = "cosine")
 	# print("ADDN euclidean: " + str(adnn_eu))
 	# print("MSDDN euclidean: " + str(msdnn_eu))
 	# print("ADDN cosine: " + str(adnn_cos))
@@ -170,16 +211,39 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	gt_class[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min()+1, map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()] = 1
 	gt_class[map_ground_truth_free[:,0] - map_ground_truth_free[:,0].min(), map_ground_truth_free[:,1]- map_ground_truth_free[:,1].min()+1] = 1
 
-	algo_class[(map_new_image_free[:,0]-map_new_image_free[:,0].min()), (map_new_image_free[:,1] - map_new_image_free[:,1].min())] = 1
-	algo_class[(map_new_image_free[:,0]-map_new_image_free[:,0].min()+1), (map_new_image_free[:,1] - map_new_image_free[:,1].min())] = 1
-	algo_class[(map_new_image_free[:,0]-map_new_image_free[:,0].min()), (map_new_image_free[:,1] - map_new_image_free[:,1].min())+1] = 1
+	gt_class[map_ground_truth_occupied[:,0] - map_ground_truth_occupied[:,0].min(), map_ground_truth_occupied[:,1]- map_ground_truth_occupied[:,1].min()] = 2
+
+
+	algo_class[(aligned_free[:,0]-aligned_free[:,0].min()), (aligned_free[:,1] - aligned_free[:,1].min())] = 1
+	algo_class[(aligned_free[:,0]-aligned_free[:,0].min()+1), (aligned_free[:,1] - aligned_free[:,1].min())] = 1
+	algo_class[(aligned_free[:,0]-aligned_free[:,0].min()), (aligned_free[:,1] - aligned_free[:,1].min())+1] = 1
+
+	algo_class[(aligned_occupied[:,0]-aligned_occupied[:,0].min()), (aligned_occupied[:,1] - aligned_occupied[:,1].min())] = 2
+
+
+	gt_class_overall[map_ground_truth[:,0] - map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 1
+	gt_class_overall[map_ground_truth[:,0] - map_ground_truth[:,0].min()+1, map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 1
+	gt_class_overall[map_ground_truth[:,0] - map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()+1] = 1
+
+	algo_class_overall[(map_new_image[:,0]- map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())] = 1
+	algo_class_overall[(map_new_image[:,0]- map_new_image[:,0].min()+1), (map_new_image[:,1] - map_new_image[:,1].min())] = 1
+	algo_class_overall[(map_new_image[:,0]- map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())+1] = 1
 
 	# Confusion matrix
 	cm = confusion_matrix(gt_class.flatten(), algo_class.flatten())
-	error = 1 - accuracy_score(gt_class.flatten(), algo_class.flatten())
-	# print(cm, error)
+	partial_error = dict()
+	metric = ["err_unknown", "err_free", "err_occupied"]
+	for i in np.arange(len(cm)):
+		partial_error[metric[i]] = 1 - cm[i,i]/cm[i,:].sum()
 
-	return adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error
+	print(partial_error)
+
+	error = 1 - accuracy_score(gt_class_overall.flatten(), algo_class_overall.flatten())
+	print(cm, error)
+	# print(trans1[-1])
+	# print(trans2[-1])
+
+	return adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, partial_error
 
 # # gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "gmapping_compare.png"))
 # gmapping = np.array(Image.open(os.getcwd() + "/comparison/" + "pgm_cropped_dinis.png"))
@@ -241,11 +305,13 @@ if __name__ == "__main__":
 
 	gmapping = "/maps/gmapping_" + str(name) + "_" + str(res_cm) + ".png"
 	map = "/maps/algo_" + str(name) + "_" + str(res_cm) + ".png"
-	try:
-		adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error = get_compare(os.getcwd() + gmapping, os.getcwd() + map, resolution=float(1/int(res_cm)))
-	except:
-		print("Invalid input")
-		quit()
+	adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, partials = get_compare(os.getcwd() + gmapping, os.getcwd() + map, resolution=float(1/int(res_cm)))
+
+	# try:
+	# 	adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error = get_compare(os.getcwd() + gmapping, os.getcwd() + map, resolution=float(1/int(res_cm)))
+	# except:
+	# 	print("Invalid input")
+	# 	quit()
 
 	save = input("Y to save: ")
 	if save == "Y":
@@ -253,9 +319,9 @@ if __name__ == "__main__":
 			file = open("maps/data_compare.txt", "a")
 		else:
 			file = open("maps/data_compare.txt", "x")
-			file.write("Name".ljust(10) + "Resolution".ljust(15) + "ADDN_eu".ljust(15) + "MSDDN_eu".ljust(15) + "ADDN_cos".ljust(15) + "MSDDN_cos".ljust(15) + "Error" + "\n")
+			file.write("Name".ljust(10) + "Resolution".ljust(15) + "ADDN_eu".ljust(15) + "MSDDN_eu".ljust(15) + "ADDN_cos".ljust(15) + "MSDDN_cos".ljust(15) + "Error".ljust(15) + "Error unknown".ljust(15) + "Error free".ljust(15) + "Error occupied" + "\n")
 		
-		file.write(name.ljust(10) + res_cm.ljust(13) + str(f'{adnn_eu:10f}').ljust(15) + str(f'{msdnn_eu:10f}').ljust(15) + str(f'{adnn_cos:6e}').ljust(15) + str(f'{msdnn_cos:6e}').ljust(15) + str(f'{error:10f}') + "\n")
+		file.write(name.ljust(10) + res_cm.ljust(13) + str(f'{adnn_eu:10f}').ljust(15) + str(f'{msdnn_eu:10f}').ljust(15) + str(f'{adnn_cos:6e}').ljust(15) + str(f'{msdnn_cos:6e}').ljust(15) + str(f'{error:10f}').ljust(15) + str(f'{partials["err_unknown"]:10f}').ljust(15) + str(f'{partials["err_free"]:10f}').ljust(15) + str(f'{partials["err_occupied"]:10f}') + "\n")
 		file.close()
 	else:
 		print("No values were saved, since 'Y' was not pressed.")
