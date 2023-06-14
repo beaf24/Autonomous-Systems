@@ -323,7 +323,7 @@ if __name__ == "__main__":
 		
 
 		#save = input("Y to save: ")
-		save = "Y"
+		save = "n"
 		if save == "Y":
 			if os.path.exists(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt"):
 				file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "a")
