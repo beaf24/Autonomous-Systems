@@ -324,5 +324,5 @@ if __name__ == "__main__":
 		file.write(name.ljust(10) + res_cm.ljust(13) + str(f'{adnn_eu:10f}').ljust(15) + str(f'{msdnn_eu:10f}').ljust(15) + str(f'{adnn_cos:6e}').ljust(15) + str(f'{msdnn_cos:6e}').ljust(15) + str(f'{error:10f}').ljust(15) + str(f'{partials["err_unknown"]:10f}').ljust(15) + str(f'{partials["err_free"]:10f}').ljust(15) + str(f'{partials["err_occupied"]:10f}') + "\n")
 		file.close()
 	else:
-		print("No values were saved, since 'Y' was not pressed.")
+		print("No values were saved, since 'Y' was not chosen.")
 	

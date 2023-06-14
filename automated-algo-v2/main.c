@@ -63,8 +63,11 @@ int main(int argc, char **argv) {
     double meter_per_pixel = 0.05;
     // sscanf(argv[1], "%lf", &meter_per_pixel);
 
-    double l_occ = log(0.70/0.30);
-    double l_free = log(0.30/0.70);
+    double l_occ = log(0.71/0.29);
+    double l_free = log(0.29/0.71);
+
+    printf("l_occ in v2 is %f", l_occ);
+    printf("l_free in v2 is %f", l_free);
 
     int x_max = 0, x_min = 0;
     int y_max = 0, y_min = 0;
