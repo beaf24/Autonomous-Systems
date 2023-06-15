@@ -2,13 +2,12 @@
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics import confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 import os
 from simpleicp import PointCloud, SimpleICP
 from PIL import Image
-from icp import icp
+from icp import icp, icp_trans
 import copy
 import os
 import argparse
@@ -130,11 +129,6 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	print(map_ground_truth.shape)
 	print(pc_image.shape)
 
-	
-
-
-
-
 	map_ground_truth_free = np.intp(pc_ground_truth_free/resolution)
 	map_ground_truth_occupied = np.intp(pc_ground_truth_occupied/resolution)
 
@@ -145,7 +139,7 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 
 	## OCCUPIED
 	# Iterative closest point
-	_, new_pc_image_occupied = icp(pc_ground_truth_occupied, pc_image_occupied, distance_threshold= 100, max_iterations=100, point_pairs_threshold=800, convergence_rotation_threshold=1e-4, verbose=True)
+	trans1, new_pc_image_occupied = icp_trans(pc_ground_truth_occupied, pc_image_occupied, distance_threshold= 50, max_iterations=1000, point_pairs_threshold=50, convergence_translation_threshold=0.001, verbose=True)
 	map_new_image_occupied = np.intp(new_pc_image_occupied/resolution)
 
 	# Confirm transformation
@@ -156,57 +150,49 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	max_x = min(map_new_image_occupied[:,0].min(), map_ground_truth_occupied[:,0].min()) 
 	max_y = min(map_new_image_occupied[:,1].min(), map_ground_truth_occupied[:,1].min())
 
-	compare_map[map_ground_truth_occupied[:,0] - max_x, map_ground_truth_occupied[:,1] - max_y] = -1
+	compare_map[map_ground_truth_occupied[:,0] - max_x, map_ground_truth_occupied[:,1] - max_y] = 1
 	#compare_map[map_image[:,0]- map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 2
 	
-	compare_map[map_new_image_occupied[:,0] - max_x, map_new_image_occupied[:,1] - max_y] = 1
+	compare_map[map_new_image_occupied[:,0] - max_x, map_new_image_occupied[:,1] - max_y] = 3
 	# cdict = {'white': [(0.0)], 'blue':[(1.0)], 'red': [(3.0)]}
-	plt.imshow(compare_map, cmap="RdBu")
-	legend_red = mpatches.Patch(color = 'maroon', label = "GMapping")
-	legend_blue = mpatches.Patch(color = 'midnightblue', label = "Estimation")	
-	plt.legend(handles=[legend_blue, legend_red], loc='upper right', prop = { "size": 8 })
-	plt.tick_params(left = False, right = False , labelleft = False ,
-                	labelbottom = False, bottom = False)
-	plt.savefig("corredores_0.1.png", dpi = 1024)
+	plt.imshow(compare_map, cmap="Blues")
 	plt.show()
 
 	## TOTAL
 	# Iterative closest point
-	trans2, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=100, point_pairs_threshold=800, verbose=True)
-	map_new_image = np.intp(new_pc_image/resolution)
-
+	# trans2, new_pc_image = icp_trans(pc_ground_truth, pc_image, distance_threshold= 800, max_iterations=100, point_pairs_threshold=100, verbose=True)
+	
+	new_pc_image = pc_image
 	aligned_free = pc_image_free
-	aligned_occupied = pc_image_occupied
+	aligned_occupied = new_pc_image_occupied
 
-	for story in np.arange(len(trans2)):
-		rot = trans2[story][0:2, 0:2]
-		translation_x = trans2[story][0,2]
-		translation_y = trans2[story][1,2]
+	for story in np.arange(len(trans1)):
+		translation_x = trans1[story][0]
+		translation_y = trans1[story][1]
 
-		aligned_free = np.dot(aligned_free, rot.T)
+		print(translation_x, translation_y)
+		
+		new_pc_image[:, 0] += translation_x
+		new_pc_image[:, 1] += translation_y
+
 		aligned_free[:, 0] += translation_x
 		aligned_free[:, 1] += translation_y
 
-		aligned_occupied = np.dot(aligned_occupied, rot.T)
-		aligned_occupied[:, 0] += translation_x
-		aligned_occupied[:, 1] += translation_y
+		# aligned_occupied[:, 0] += translation_x
+		# aligned_occupied[:, 1] += translation_y
 
 	aligned_free = np.intp(aligned_free/resolution)
 	aligned_occupied = np.intp(aligned_occupied/resolution)
+	map_new_image = np.intp(new_pc_image/resolution)
 
 	# Confirm transformation
 	size_x_comp = max(map_ground_truth[:,0].max() - map_ground_truth[:,0].min(), map_new_image[:,0].max()-map_new_image[:,0].min()) +np.abs(map_ground_truth[:,0].min() - map_new_image[:,0].min()) +2
-	size_y_comp = max(map_ground_truth[:,1].max()-map_ground_truth[:,1].min(), map_new_image[:,1].max()-map_new_image[:,1].min()) + np.abs(map_ground_truth[:,1].min() - map_new_image[:,1].min()) + 2
+	size_y_comp = max(map_ground_truth[:,1].max() - map_ground_truth[:,1].min(), map_new_image[:,1].max()-map_new_image[:,1].min()) + np.abs(map_ground_truth[:,1].min() - map_new_image[:,1].min()) + 2
 	compare_map = np.zeros((size_x_comp, size_y_comp))
 	
 	size_x_prob = max(aligned_free[:,0].max() - aligned_free[:,0].min(), aligned_occupied[:,0].max()-aligned_occupied[:,0].min()) + np.abs(aligned_free[:,0].min() - aligned_occupied[:,0].min()) +2
-	size_y_prob = max(aligned_free[:,1].max()-aligned_free[:,1].min(), aligned_occupied[:,1].max()-aligned_occupied[:,1].min()) + np.abs(aligned_free[:,1].min() - aligned_occupied[:,1].min()) + 2
+	size_y_prob = max(aligned_free[:,1].max() - aligned_free[:,1].min(), aligned_occupied[:,1].max()-aligned_occupied[:,1].min()) + np.abs(aligned_free[:,1].min() - aligned_occupied[:,1].min()) + 2
 	prob_map = np.zeros((size_x_prob, size_y_prob))
-	
-	gt_class = copy.deepcopy(compare_map)
-	gt_class_overall = copy.deepcopy(compare_map)
-	algo_class_overall = copy.deepcopy(compare_map)
-	algo_class = copy.deepcopy(compare_map)
 	
 	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min()), map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())] = 1
 	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min())+1, map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())] = 1
@@ -242,29 +228,59 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 
 	## Classification problem
 	# Matrices
+	global_x_size = max(size_x_prob, size_x_comp)
+	global_y_size = max(size_y_prob, size_y_comp)
+	
+	global_map = np.zeros((global_x_size, global_y_size))
+	
+	gt_class = copy.deepcopy(global_map)
+	gt_class_overall = copy.deepcopy(global_map)
+	algo_class_overall = copy.deepcopy(global_map)
+	algo_class = copy.deepcopy(global_map)
+
+
 	min_x_gt_class = min(map_ground_truth_free[:,0].min(), map_ground_truth_occupied[:,0].min())
 	min_y_gt_class = min(map_ground_truth_free[:,1].min(), map_ground_truth_occupied[:,1].min())
-	gt_class[map_ground_truth_free[:,0] - min_x_gt_class, map_ground_truth_free[:,1]- min_y_gt_class] = 1
-	gt_class[map_ground_truth_free[:,0] - min_x_gt_class+1, map_ground_truth_free[:,1]- min_y_gt_class] = 1
-	gt_class[map_ground_truth_free[:,0] - min_x_gt_class, map_ground_truth_free[:,1]- min_y_gt_class+1] = 1
-	gt_class[map_ground_truth_occupied[:,0] - min_x_gt_class, map_ground_truth_occupied[:,1]- min_y_gt_class] = 2
 
 	min_x_algo_class = min(aligned_free[:,0].min(), aligned_occupied[:,0].min())
 	min_y_algo_class = min(aligned_free[:,1].min(), aligned_occupied[:,1].min())
-	algo_class[(aligned_free[:,0]-min_x_algo_class), (aligned_free[:,1] - min_y_algo_class)] = 1
-	algo_class[(aligned_free[:,0]-min_x_algo_class+1), (aligned_free[:,1] - min_y_algo_class)] = 1
-	algo_class[(aligned_free[:,0]-min_x_algo_class), (aligned_free[:,1] - min_y_algo_class)+1] = 1
-	algo_class[(aligned_occupied[:,0]-min_x_algo_class), (aligned_occupied[:,1] - min_y_algo_class)] = 2
 
-	gt_class_overall[map_ground_truth[:,0] - map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 1
-	gt_class_overall[map_ground_truth[:,0] - map_ground_truth[:,0].min()+1, map_ground_truth[:,1]- map_ground_truth[:,1].min()] = 1
-	gt_class_overall[map_ground_truth[:,0] - map_ground_truth[:,0].min(), map_ground_truth[:,1]- map_ground_truth[:,1].min()+1] = 1
+	global_x_min = min(min_x_algo_class, min_x_gt_class)
+	global_y_min = min(min_y_algo_class, min_y_gt_class)
 
-	algo_class_overall[(map_new_image[:,0]- map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())] = 1
-	algo_class_overall[(map_new_image[:,0]- map_new_image[:,0].min()+1), (map_new_image[:,1] - map_new_image[:,1].min())] = 1
-	algo_class_overall[(map_new_image[:,0]- map_new_image[:,0].min()), (map_new_image[:,1] - map_new_image[:,1].min())+1] = 1
+	gt_class[map_ground_truth_free[:,0] - global_x_min, map_ground_truth_free[:,1]- global_y_min] = 1
+	gt_class[map_ground_truth_free[:,0] - global_x_min+1, map_ground_truth_free[:,1]- global_y_min] = 1
+	gt_class[map_ground_truth_free[:,0] - global_x_min, map_ground_truth_free[:,1]- global_y_min+1] = 1
+	gt_class[map_ground_truth_occupied[:,0] - global_x_min, map_ground_truth_occupied[:,1]- global_y_min] = 2
 
+	
+	algo_class[(aligned_free[:,0]-global_x_min), (aligned_free[:,1] - global_y_min)] = 1
+	algo_class[(aligned_free[:,0]-global_x_min+1), (aligned_free[:,1] - global_y_min)] = 1
+	algo_class[(aligned_free[:,0]-global_x_min), (aligned_free[:,1] - global_y_min)+1] = 1
+	algo_class[(aligned_occupied[:,0]-global_x_min), (aligned_occupied[:,1] - global_y_min)] = 2
 
+	plt.imshow(gt_class, cmap="Blues")
+	plt.show()
+
+	plt.imshow(algo_class, cmap="Blues")
+	plt.show()
+
+	overall_x_min = min(map_ground_truth[:,0].min(), map_new_image[:,0].min())
+	overall_y_min = min(map_ground_truth[:,1].min(), map_new_image[:,1].min())
+
+	gt_class_overall[map_ground_truth[:,0] - overall_x_min, map_ground_truth[:,1]- overall_y_min] = 1
+	gt_class_overall[map_ground_truth[:,0] - overall_x_min+1, map_ground_truth[:,1]- overall_y_min] = 1
+	gt_class_overall[map_ground_truth[:,0] - overall_x_min, map_ground_truth[:,1]- overall_y_min+1] = 1
+	
+	algo_class_overall[(map_new_image[:,0]- overall_x_min), (map_new_image[:,1] - overall_y_min)] = 1
+	algo_class_overall[(map_new_image[:,0]- overall_x_min+1), (map_new_image[:,1] - overall_y_min)] = 1
+	algo_class_overall[(map_new_image[:,0]- overall_x_min), (map_new_image[:,1] - overall_y_min)+1] = 1
+
+	plt.imshow(gt_class_overall, cmap="Blues")
+	plt.show()
+	
+	plt.imshow(algo_class_overall, cmap="Blues")
+	plt.show()
 	# Confusion matrix
 	cm = confusion_matrix(gt_class.flatten(), algo_class.flatten())
 	partial_error = dict()
@@ -298,8 +314,8 @@ if __name__ == "__main__":
 		pfrees = np.round(np.arange(0.10, 0.50, 0.01),2)
 		for args.pfree in pfrees:
 			print(args.pfree)
-			gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/corredores2 - pfree/map.png"
-			map = parent_dir + "/automated-with-comparison/mapping-comparison/images/corredores2 - pfree/map_algo-" + str(args.pfree) + ".png"
+			gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/sr manel - pfree/map.png"
+			map = parent_dir + "/automated-with-comparison/mapping-comparison/images/sr manel - pfree/map_algo-" + str(args.pfree) + ".png"
 
 			print(map)
 			
@@ -321,8 +337,8 @@ if __name__ == "__main__":
 			else:
 				print("No values were saved, since 'Y' was not pressed.")
 	else:
-		gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/corredores2 - pfree/map.png"
-		map = parent_dir + "/automated-with-comparison/mapping-comparison/images/corredores2 - pfree/map_algo-" + str(args.pfree) + ".png"
+		gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/sr manel - pfree/map.png"
+		map = parent_dir + "/automated-with-comparison/mapping-comparison/images/sr manel - pfree/map_algo-" + str(args.pfree) + ".png"
 
 		print(map)
 		
@@ -331,7 +347,7 @@ if __name__ == "__main__":
 		
 
 		#save = input("Y to save: ")
-		save = "n"
+		save = "Y"
 		if save == "Y":
 			if os.path.exists(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt"):
 				file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "a")

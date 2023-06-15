@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     parent_dir = os.getcwd()
-    file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "r")
+    file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare - corredores2_pfree.txt", "r")
     file.readline()
     logs = []
     adnns = []
@@ -23,40 +23,63 @@ if __name__ == "__main__":
         error_free.append(float(frag[9]))
         error_occ.append(float(frag[10]))
 
+    logs = np.array(logs)
+    adnns = np.array(adnns)
+    errors = np.array(errors)
+    error_unk = np.array(error_unk)
+    error_free = np.array(error_free)
+    error_occ = np.array(error_occ)
+
     print(adnns, logs)
 
-    plt.figure(figsize=(10,2))
-
-    plt.subplot(1,2,1)
+    plt.figure()
     plt.plot(np.array(logs), np.array(adnns), 'k')
     plt.xlabel("P_free")
-    plt.ylabel("ADNN")
-    plt.title("ADNN variation")
-
-    plt.subplot(1,2,2)
-    plt.plot(np.array(logs), np.array(errors), 'k')
-    plt.xlabel("P_free")
-    plt.ylabel("Error")
-    plt.title("Error variation")
+    plt.ylabel("ADNN (m)")
+    plt.title("ADNN in function of P_free", fontsize = "12")
+    # plt.savefig("adnn", dpi = 1024)
     plt.show()
 
-    plt.figure(figsize=(10,2))
+    plt.figure()
+    plt.plot(np.array(logs), np.array(errors), 'k')
+    plt.xlabel("P_free")
+    plt.ylabel("Error (%)")
+    plt.title("Global error percentage in function of P_free", fontsize = "12")
+    # plt.savefig("global error", dpi = 1024)
+    plt.show()
 
-    plt.subplot(1,3,1)
+    plt.figure()
     plt.plot(np.array(logs), np.array(error_unk), 'k')
+    i = min(error_unk)
+    j = logs[error_unk == i]
+    plt.scatter(j, i, marker='x', color = 'red', label = 'minimum')
     plt.xlabel("P_free")
-    plt.ylabel("Error")
-    plt.title("Error unknown")
+    plt.ylabel("Error (%)")
+    plt.title("$\mathit{Unknown}$ partial error", fontsize = "12")
+    plt.legend(prop = { "size": 8 })
+    plt.savefig("unknown partial", dpi = 1024)
+    plt.show()
 
-    plt.subplot(1,3,2)
+    plt.figure()
+    i = min(error_free)
+    j = logs[error_free == i]
     plt.plot(np.array(logs), np.array(error_free), 'k')
+    plt.scatter(j, i, marker='x', color = 'red', label = 'minimum')
     plt.xlabel("P_free")
-    plt.ylabel("Error")
-    plt.title("Error free")
+    plt.ylabel("Error (%)")
+    plt.title("$\mathit{Free}$ partial error", fontsize = "12")
+    plt.legend(prop = { "size": 8 })
+    plt.savefig("free partial", dpi = 1024)
+    plt.show()
 
-    plt.subplot(1,3,3)
+    plt.figure()
     plt.plot(np.array(logs), np.array(error_occ), 'k')
+    i = min(error_occ)
+    j = logs[error_occ == i]
+    plt.scatter(j, i, marker='x', color = 'red',label = 'minimum')
     plt.xlabel("P_free")
-    plt.ylabel("Error")
-    plt.title("Error occupied")
+    plt.ylabel("Error (%)")
+    plt.title("$\mathit{Occupied}$ partial error", fontsize = "12")
+    plt.legend(prop = { "size": 8 })
+    plt.savefig("occupied partial", dpi = 1024)
     plt.show()
