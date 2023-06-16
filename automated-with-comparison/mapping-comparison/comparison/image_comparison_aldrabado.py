@@ -2,6 +2,7 @@
 from skimage.metrics import structural_similarity as ssim
 from sklearn.metrics import confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 import os
@@ -145,18 +146,16 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	# Confirm transformation
 	size_x = (max(map_ground_truth_occupied[:,0].max() - map_ground_truth_occupied[:,0].min(), map_new_image_occupied[:,0].max()-map_new_image_occupied[:,0].min()) + np.abs(map_new_image_occupied[:,0].min() - map_ground_truth_occupied[:,0].min())) +1
 	size_y = max(map_ground_truth_occupied[:,1].max()-map_ground_truth_occupied[:,1].min(), map_new_image_occupied[:,1].max()-map_new_image_occupied[:,1].min()) + np.abs(map_new_image_occupied[:,1].min() - map_ground_truth_occupied[:,1].min())+1
-	compare_map = np.zeros((size_x, size_y))
+	compare_map_0 = np.zeros((size_x, size_y))
 	
 	max_x = min(map_new_image_occupied[:,0].min(), map_ground_truth_occupied[:,0].min()) 
 	max_y = min(map_new_image_occupied[:,1].min(), map_ground_truth_occupied[:,1].min())
 
-	compare_map[map_ground_truth_occupied[:,0] - max_x, map_ground_truth_occupied[:,1] - max_y] = 1
+	compare_map_0[map_ground_truth_occupied[:,0] - max_x, map_ground_truth_occupied[:,1] - max_y] = 1
 	#compare_map[map_image[:,0]- map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 2
 	
-	compare_map[map_new_image_occupied[:,0] - max_x, map_new_image_occupied[:,1] - max_y] = 3
+	compare_map_0[map_new_image_occupied[:,0] - max_x, map_new_image_occupied[:,1] - max_y] = -1
 	# cdict = {'white': [(0.0)], 'blue':[(1.0)], 'red': [(3.0)]}
-	plt.imshow(compare_map, cmap="Blues")
-	plt.show()
 
 	## TOTAL
 	# Iterative closest point
@@ -210,12 +209,6 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	# prob_map[(aligned_occupied[:,0]-aligned_occupied[:,0].min()+1), (aligned_occupied[:,1] - aligned_occupied[:,1].min())] = 2
 	# prob_map[(aligned_occupied[:,0]-aligned_occupied[:,0].min()), (aligned_occupied[:,1] - aligned_occupied[:,1].min())+1] = 2
 
-	plt.imshow(prob_map, cmap="Blues")
-	plt.show()
-
-	plt.imshow(compare_map, cmap="Blues")
-	plt.show()
-
 	# Metrics
 	adnn_eu = ADNN(pc_ground_truth_occupied, new_pc_image_occupied, metric = "euclidean")
 	msdnn_eu = MSDNN(pc_ground_truth_occupied, new_pc_image_occupied, metric = "euclidean")
@@ -259,12 +252,6 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	algo_class[(aligned_free[:,0]-global_x_min), (aligned_free[:,1] - global_y_min)+1] = 1
 	algo_class[(aligned_occupied[:,0]-global_x_min), (aligned_occupied[:,1] - global_y_min)] = 2
 
-	plt.imshow(gt_class, cmap="Blues")
-	plt.show()
-
-	plt.imshow(algo_class, cmap="Blues")
-	plt.show()
-
 	overall_x_min = min(map_ground_truth[:,0].min(), map_new_image[:,0].min())
 	overall_y_min = min(map_ground_truth[:,1].min(), map_new_image[:,1].min())
 
@@ -276,26 +263,54 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	algo_class_overall[(map_new_image[:,0]- overall_x_min+1), (map_new_image[:,1] - overall_y_min)] = 1
 	algo_class_overall[(map_new_image[:,0]- overall_x_min), (map_new_image[:,1] - overall_y_min)+1] = 1
 
+	plt.imshow(compare_map_0, cmap="RdBu")
+	legend_red = mpatches.Patch(color = 'maroon', label = "GMapping")
+	legend_blue = mpatches.Patch(color = 'midnightblue', label = "Estimation")	
+	plt.legend(handles=[legend_blue, legend_red], loc='upper right', prop = { "size": 8 })
+	plt.tick_params(left = False, right = False , labelleft = False ,
+                	labelbottom = False, bottom = False)
+	# plt.savefig("corredores_0.1.png", dpi = 1024)
+	plt.show()
+
+	plt.imshow(prob_map, cmap="Blues")
+	plt.show()
+
+	plt.imshow(compare_map, cmap="Blues")
+	plt.show()
+
+	plt.imshow(gt_class, cmap="Blues")
+	plt.show()
+
+	plt.imshow(algo_class, cmap="Blues")
+	plt.show()
+
 	plt.imshow(gt_class_overall, cmap="Blues")
 	plt.show()
 	
 	plt.imshow(algo_class_overall, cmap="Blues")
 	plt.show()
+
 	# Confusion matrix
-	cm = confusion_matrix(gt_class.flatten(), algo_class.flatten())
+	cm_partial = confusion_matrix(gt_class.flatten(), algo_class.flatten(), normalize='all')
+	cm_pred = confusion_matrix(gt_class.flatten(), algo_class.flatten(), normalize='pred')
+
 	partial_error = dict()
+	pred_error = dict()
 	metric = ["err_unknown", "err_free", "err_occupied"]
-	for i in np.arange(len(cm)):
-		partial_error[metric[i]] = 1 - cm[i,i]/cm[i,:].sum()
+	for i in np.arange(len(metric)):
+		partial_error[metric[i]] = 1 - cm_partial[i,i]
+		pred_error[metric[i]] = 1 - cm_pred[i,i]
 
 	#print(partial_error)
 
 	error = 1 - accuracy_score(gt_class_overall.flatten(), algo_class_overall.flatten())
+	error_overlap = (1 - confusion_matrix(gt_class_overall.flatten(), algo_class_overall.flatten(), normalize='pred'))[1,1]
+	print(error_overlap)
 	#print(cm, error)
 	# print(trans1[-1])
 	# print(trans2[-1])
 
-	return adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, partial_error
+	return adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, error_overlap, partial_error, pred_error
 
 if __name__ == "__main__":
 	#name = input("Mapping file: ")
@@ -319,7 +334,7 @@ if __name__ == "__main__":
 
 			print(map)
 			
-			adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, partials = get_compare(gmapping, map, resolution=0.1)
+			adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, error_overlap, partials, pred_error = get_compare(gmapping, map, resolution=0.1)
 			
 			
 
@@ -332,7 +347,7 @@ if __name__ == "__main__":
 					file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "x")
 					file.write("Name\tResolution\tLog free\tADDN_eu\tMSDDN_eu\tADDN_cos\tMSDDN_cos\tError\tError unknown\tError free\tError occupied\n")
 							
-				file.write(str(args.name) + "\t" + str(args.res) + "\t" + str(args.pfree) + "\t" + str(adnn_eu) + "\t" + str(msdnn_eu) + "\t" + str(adnn_cos) + "\t" + str(msdnn_cos) + "\t" + str(error) + "\t" + str(partials["err_unknown"]) + "\t" + str(partials["err_free"]) + "\t" + str(partials["err_occupied"]) + "\n")
+				file.write(str(args.name) + "\t" + str(args.res) + "\t" + str(args.pfree) + "\t" + str(adnn_eu) + "\t" + str(msdnn_eu) + "\t" + str(adnn_cos) + "\t" + str(msdnn_cos) + "\t" + str(error) + "\t" + str(error_overlap) + "\t" + str(partials["err_unknown"]) + "\t" + str(partials["err_free"]) + "\t" + str(partials["err_occupied"]) + "\t" + str(pred_error["err_unknown"]) + "\t" + str(pred_error["err_free"]) + "\t" + str(pred_error["err_occupied"]) + "\n")
 				file.close()
 			else:
 				print("No values were saved, since 'Y' was not pressed.")
@@ -342,12 +357,10 @@ if __name__ == "__main__":
 
 		print(map)
 		
-		adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, partials = get_compare(gmapping, map, resolution=0.1)
-		
-		
+		adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, error_overlap, partials, pred_error = get_compare(gmapping, map, resolution=0.1)
 
 		#save = input("Y to save: ")
-		save = "Y"
+		save = "n"
 		if save == "Y":
 			if os.path.exists(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt"):
 				file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "a")
@@ -355,8 +368,7 @@ if __name__ == "__main__":
 				file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "x")
 				file.write("Name\tResolution\tLog free\tADDN_eu\tMSDDN_eu\tADDN_cos\tMSDDN_cos\tError\tError unknown\tError free\tError occupied\n")
 						
-			file.write(str(args.name) + "\t" + str(args.res) + "\t" + str(args.pfree) + "\t" + str(adnn_eu) + "\t" + str(msdnn_eu) + "\t" + str(adnn_cos) + "\t" + str(msdnn_cos) + "\t" + str(error) + "\t" + str(partials["err_unknown"]) + "\t" + str(partials["err_free"]) + "\t" + str(partials["err_occupied"]) + "\n")
+			file.write(str(args.name) + "\t" + str(args.res) + "\t" + str(args.pfree) + "\t" + str(adnn_eu) + "\t" + str(msdnn_eu) + "\t" + str(adnn_cos) + "\t" + str(msdnn_cos) + "\t" + str(error) + "\t" + str(error_overlap) + "\t" + str(partials["err_unknown"]) + "\t" + str(partials["err_free"]) + "\t" + str(partials["err_occupied"]) + "\t" + str(pred_error["err_unknown"]) + "\t" + str(pred_error["err_free"]) + "\t" + str(pred_error["err_occupied"]) + "\n")
 			file.close()
 		else:
 			print("No values were saved, since 'Y' was not pressed.")
-
