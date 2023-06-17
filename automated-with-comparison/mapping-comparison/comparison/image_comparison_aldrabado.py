@@ -263,32 +263,32 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	algo_class_overall[(map_new_image[:,0]- overall_x_min+1), (map_new_image[:,1] - overall_y_min)] = 1
 	algo_class_overall[(map_new_image[:,0]- overall_x_min), (map_new_image[:,1] - overall_y_min)+1] = 1
 
-	# plt.imshow(compare_map_0, cmap="RdBu")
-	# legend_red = mpatches.Patch(color = 'maroon', label = "GMapping")
-	# legend_blue = mpatches.Patch(color = 'midnightblue', label = "Estimation")	
-	# plt.legend(handles=[legend_blue, legend_red], loc='upper right', prop = { "size": 8 })
-	# plt.tick_params(left = False, right = False , labelleft = False ,
-    #             	labelbottom = False, bottom = False)
-	# # plt.savefig("corredores_0.1.png", dpi = 1024)
-	# plt.show()
+	plt.imshow(compare_map_0, cmap="RdBu")
+	legend_red = mpatches.Patch(color = 'maroon', label = "GMapping")
+	legend_blue = mpatches.Patch(color = 'midnightblue', label = "Estimation")	
+	plt.legend(handles=[legend_blue, legend_red], loc='upper right', prop = { "size": 8 })
+	plt.tick_params(left = False, right = False , labelleft = False ,
+                	labelbottom = False, bottom = False)
+	# plt.savefig("corredores_0.1.png", dpi = 1024)
+	plt.show()
 
-	# plt.imshow(prob_map, cmap="Blues")
-	# plt.show()
+	plt.imshow(prob_map, cmap="Blues")
+	plt.show()
 
-	# plt.imshow(compare_map, cmap="Blues")
-	# plt.show()
+	plt.imshow(compare_map, cmap="Blues")
+	plt.show()
 
-	# plt.imshow(gt_class, cmap="Blues")
-	# plt.show()
+	plt.imshow(gt_class, cmap="Blues")
+	plt.show()
 
-	# plt.imshow(algo_class, cmap="Blues")
-	# plt.show()
+	plt.imshow(algo_class, cmap="Blues")
+	plt.show()
 
-	# plt.imshow(gt_class_overall, cmap="Blues")
-	# plt.show()
+	plt.imshow(gt_class_overall, cmap="Blues")
+	plt.show()
 	
-	# plt.imshow(algo_class_overall, cmap="Blues")
-	# plt.show()
+	plt.imshow(algo_class_overall, cmap="Blues")
+	plt.show()
 
 	# Confusion matrix
 	cm_partial = confusion_matrix(gt_class.flatten(), algo_class.flatten(), normalize='all')
