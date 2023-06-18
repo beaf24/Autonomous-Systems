@@ -140,7 +140,7 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 
 	## OCCUPIED
 	# Iterative closest point
-	_, new_pc_image_occupied = icp(pc_ground_truth_occupied, pc_image_occupied, distance_threshold= 100, max_iterations=100, point_pairs_threshold=800, convergence_rotation_threshold=1e-4, verbose=True)
+	_, new_pc_image_occupied = icp(pc_ground_truth_occupied, pc_image_occupied, distance_threshold= 100, max_iterations=1000, point_pairs_threshold=800, convergence_rotation_threshold=1e-4, verbose=True)
 	map_new_image_occupied = np.intp(new_pc_image_occupied/resolution)
 
 	# Confirm transformation
@@ -163,7 +163,7 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	
 	## TOTAL
 	# Iterative closest point
-	trans2, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=100, point_pairs_threshold=800, verbose=True)
+	trans2, new_pc_image = icp(pc_ground_truth, pc_image, distance_threshold= 100, max_iterations=1000, point_pairs_threshold=800, verbose=True)
 	map_new_image = np.intp(new_pc_image/resolution)
 
 	aligned_free = pc_image_free
@@ -195,13 +195,13 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	prob_map = np.zeros((size_x_prob, size_y_prob))
 	
 	
-	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min()), map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())] = 1
-	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min())+1, map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())] = 1
-	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min()), map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())+1] = 1
+	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min()), map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())] = -1
+	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min())+1, map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())] = -1
+	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min()), map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())+1] = -1
 
-	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))] = 3
-	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())+1), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))] = 3
-	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))+1] = 3
+	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))] = 1
+	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())+1), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))] = 1
+	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))+1] = 1
 
 	prob_map[(aligned_free[:,0]-min(aligned_free[:,0].min(), aligned_occupied[:,0].min())), (aligned_free[:,1] - min(aligned_free[:,1].min(), aligned_occupied[:,1].min()))] = 1
 	prob_map[(aligned_free[:,0]-min(aligned_free[:,0].min(), aligned_occupied[:,0].min())+1), (aligned_free[:,1] - min(aligned_free[:,1].min(), aligned_occupied[:,1].min()))] = 1
@@ -266,9 +266,9 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	algo_class_overall[(map_new_image[:,0]- overall_x_min+1), (map_new_image[:,1] - overall_y_min)] = 1
 	algo_class_overall[(map_new_image[:,0]- overall_x_min), (map_new_image[:,1] - overall_y_min)+1] = 1
 
-	plt.imshow(compare_map_0, cmap="RdBu")
-	legend_red = mpatches.Patch(color = 'maroon', label = "GMapping")
-	legend_blue = mpatches.Patch(color = 'midnightblue', label = "Estimation")	
+	plt.imshow(compare_map_0, cmap="RdBu", vmin=-1.5, vmax=1.5)
+	legend_red = mpatches.Patch(color = 'firebrick', label = "GMapping")
+	legend_blue = mpatches.Patch(color = 'cornflowerblue', label = "Estimation")	
 	plt.legend(handles=[legend_blue, legend_red], loc='upper right', prop = { "size": 8 })
 	plt.tick_params(left = False, right = False , labelleft = False ,
                 	labelbottom = False, bottom = False)
@@ -278,20 +278,25 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	plt.imshow(prob_map, cmap="Blues")
 	plt.show()
 
-	plt.imshow(compare_map, cmap="Blues")
+	plt.imshow(compare_map, cmap="RdBu", vmin=-1.5, vmax=1.5)
+	legend_red = mpatches.Patch(color = 'firebrick', label = "GMapping")
+	legend_blue = mpatches.Patch(color = 'cornflowerblue', label = "Estimation")	
+	plt.legend(handles=[legend_blue, legend_red], loc='upper right', prop = { "size": 8 })
+	plt.tick_params(left = False, right = False , labelleft = False ,
+                	labelbottom = False, bottom = False)
 	plt.show()
 
-	plt.imshow(gt_class, cmap="Blues")
-	plt.show()
+	# plt.imshow(gt_class, cmap="Blues")
+	# plt.show()
 
-	plt.imshow(algo_class, cmap="Blues")
-	plt.show()
+	# plt.imshow(algo_class, cmap="Blues")
+	# plt.show()
 
-	plt.imshow(gt_class_overall, cmap="Blues")
-	plt.show()
+	# plt.imshow(gt_class_overall, cmap="Blues")
+	# plt.show()
 	
-	plt.imshow(algo_class_overall, cmap="Blues")
-	plt.show()
+	# plt.imshow(algo_class_overall, cmap="Blues")
+	# plt.show()
 
 	# Confusion matrix
 	cm_partial = confusion_matrix(gt_class.flatten(), algo_class.flatten(), normalize='all')
@@ -313,6 +318,8 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	# print(trans1[-1])
 	# print(trans2[-1])
 
+	print(adnn_eu, error, error_overlap)
+
 	return adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, error_overlap, partial_error, pred_error
 
 if __name__ == "__main__":
@@ -327,11 +334,86 @@ if __name__ == "__main__":
 	parser.add_argument("-post", "--post", type=str)
 	parser.add_argument("-post_min", "--postmin", type=str)
 	parser.add_argument("-post_max", "--postmax", type=str)
+	parser.add_argument("-thick", "--thick", type=str)
 	parser.add_argument("-res", "--res", type=str)
 	parser.add_argument("-name", "--name", type=str)
 	args = parser.parse_args()
 
-	if args.post == "all":
+	if args.res != "0.1" and args.res != None:
+		logs = ["0.45", "0.47", "0.49"]
+		posts = ["[0.1;0.9]", "[0.196;0.65]"]
+
+		for l in logs:
+			for p in posts:
+				gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/" + args.res + "-corredores/map-"+ args.res+".png"
+				map = parent_dir + "/automated-with-comparison/mapping-comparison/images/" + args.res + "-corredores/map_algo-res_" + args.res + "-("+ l + ")--"+ p +"--.png"
+
+				print(map)
+				
+				adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, error_overlap, partials, pred_error = get_compare(gmapping, map, resolution=0.1)
+				
+				#save = input("Y to save: ")
+				save = "Y"
+				if save == "Y":
+					if os.path.exists(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt"):
+						file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "a")
+					else:
+						file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "x")
+						file.write("Name\tResolution\tLog free\tP min\tP max\tADDN_eu\tMSDDN_eu\tADDN_cos\tMSDDN_cos\tError\tError unknown\tError free\tError occupied\n")
+								
+					file.write(str(args.name) + "\t" + str(args.res) + "\t" + str(l) + "\t" + str(p) + "\t" + str(adnn_eu) + "\t" + str(error) + "\t" + str(error_overlap) + "\n")
+					file.close()
+				else:
+					print("No values were saved, since 'Y' was not pressed.")
+
+	elif args.thick == "all":
+		thickness = ["0.1", "0.2", "0.3", "0.4", "0.5", "1.0"]
+
+		for t in thickness:
+			gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/wallthickness-images/map.png"
+			map = parent_dir + "/automated-with-comparison/mapping-comparison/images/wallthickness-images/map_algo-res_0.1-(0.49)--[0.1;0.9]--"+ t +"thick.png"
+
+			print(map)
+			
+			adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, error_overlap, partials, pred_error = get_compare(gmapping, map, resolution=0.1)
+			
+			#save = input("Y to save: ")
+			save = "Y"
+			if save == "Y":
+				if os.path.exists(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt"):
+					file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "a")
+				else:
+					file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "x")
+					file.write("Name\tResolution\tLog free\tP min\tP max\tADDN_eu\tMSDDN_eu\tADDN_cos\tMSDDN_cos\tError\tError unknown\tError free\tError occupied\n")
+							
+				file.write(str(args.name) + "\t" + str(args.res) + "\t" + str(t) + "\t" + str(adnn_eu) + "\t" + str(error) + "\t" + str(error_overlap) + "\n")
+				file.close()
+			else:
+				print("No values were saved, since 'Y' was not pressed.")
+	
+	elif args.thick != None:
+		gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/wallthickness-images/map.png"
+		map = parent_dir + "/automated-with-comparison/mapping-comparison/images/wallthickness-images/map_algo-res_0.1-(0.49)--[0.1;0.9]--"+ args.thick +"thick.png"
+
+		print(map)
+		
+		adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, error_overlap, partials, pred_error = get_compare(gmapping, map, resolution=0.1)
+		
+		#save = input("Y to save: ")
+		save = "Y"
+		if save == "Y":
+			if os.path.exists(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt"):
+				file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "a")
+			else:
+				file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "x")
+				file.write("Name\tResolution\tLog free\tP min\tP max\tADDN_eu\tMSDDN_eu\tADDN_cos\tMSDDN_cos\tError\tError unknown\tError free\tError occupied\n")
+						
+			file.write(str(args.name) + "\t" + str(args.res) + "\t" + str(args.thick) + "\t" + str(adnn_eu) + "\t" + str(error) + "\t" + str(error_overlap) + "\n")
+			file.close()
+		else:
+			print("No values were saved, since 'Y' was not pressed.")
+
+	elif args.post == "all":
 		mins = ["0.45", "0.15", "0.196", "0.25", "0.1", "0.3", "0.45"]
 		maxs = ["0.55", "0.65", "0.65", "0.65", "0.9", "0.9", "0.9"]
 
@@ -360,15 +442,15 @@ if __name__ == "__main__":
 				print("No values were saved, since 'Y' was not pressed.")
 	
 	elif args.postmin != None:
-		gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/0.45-0.49-images/map.png"
-		map = parent_dir + "/automated-with-comparison/mapping-comparison/images/0.45-0.49-images/map_algo-res_" + str(args.res) + "-(" + str(args.pfree) + ")--[" + str(args.postmin) + ";" + str(args.postmax) + "]--.png"
+		gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/deec-images/map-deec.png"
+		map = parent_dir + "/automated-with-comparison/mapping-comparison/images/deec-images/map_algo-res_" + str(args.res) + "-(" + str(args.pfree) + ")--[" + str(args.postmin) + ";" + str(args.postmax) + "]--.png"
 
 		print(map)
 		
 		adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, error_overlap, partials, pred_error = get_compare(gmapping, map, resolution=0.1)
 
 		#save = input("Y to save: ")
-		save = "n"
+		save = "Y"
 		if save == "Y":
 			if os.path.exists(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt"):
 				file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "a")

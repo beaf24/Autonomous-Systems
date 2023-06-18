@@ -151,10 +151,10 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	max_x = min(map_new_image_occupied[:,0].min(), map_ground_truth_occupied[:,0].min()) 
 	max_y = min(map_new_image_occupied[:,1].min(), map_ground_truth_occupied[:,1].min())
 
-	compare_map_0[map_ground_truth_occupied[:,0] - max_x, map_ground_truth_occupied[:,1] - max_y] = 1
+	compare_map_0[map_ground_truth_occupied[:,0] - max_x, map_ground_truth_occupied[:,1] - max_y] = -1
 	#compare_map[map_image[:,0]- map_image[:,0].min(), map_image[:,1]- map_image[:,1].min()] = 2
 	
-	compare_map_0[map_new_image_occupied[:,0] - max_x, map_new_image_occupied[:,1] - max_y] = -1
+	compare_map_0[map_new_image_occupied[:,0] - max_x, map_new_image_occupied[:,1] - max_y] = 1
 	# cdict = {'white': [(0.0)], 'blue':[(1.0)], 'red': [(3.0)]}
 
 	## TOTAL
@@ -193,13 +193,13 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	size_y_prob = max(aligned_free[:,1].max() - aligned_free[:,1].min(), aligned_occupied[:,1].max()-aligned_occupied[:,1].min()) + np.abs(aligned_free[:,1].min() - aligned_occupied[:,1].min()) + 2
 	prob_map = np.zeros((size_x_prob, size_y_prob))
 	
-	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min()), map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())] = 1
-	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min())+1, map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())] = 1
-	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min()), map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())+1] = 1
+	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min()), map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())] = -1
+	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min())+1, map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())] = -1
+	compare_map[map_ground_truth[:,0] - min(map_ground_truth[:,0].min(), map_new_image[:,0].min()), map_ground_truth[:,1]- min(map_ground_truth[:,1].min(), map_new_image[:,1].min())+1] = -1
 
-	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))] = 3
-	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())+1), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))] = 3
-	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))+1] = 3
+	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))] = 1
+	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())+1), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))] = 1
+	compare_map[(map_new_image[:,0]- min(map_ground_truth[:,0].min(), map_new_image[:,0].min())), (map_new_image[:,1] - min(map_ground_truth[:,1].min(), map_new_image[:,1].min()))+1] = 1
 
 	prob_map[(aligned_free[:,0]-min(aligned_free[:,0].min(), aligned_occupied[:,0].min())), (aligned_free[:,1] - min(aligned_free[:,1].min(), aligned_occupied[:,1].min()))] = 1
 	prob_map[(aligned_free[:,0]-min(aligned_free[:,0].min(), aligned_occupied[:,0].min())+1), (aligned_free[:,1] - min(aligned_free[:,1].min(), aligned_occupied[:,1].min()))] = 1
@@ -263,9 +263,9 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	algo_class_overall[(map_new_image[:,0]- overall_x_min+1), (map_new_image[:,1] - overall_y_min)] = 1
 	algo_class_overall[(map_new_image[:,0]- overall_x_min), (map_new_image[:,1] - overall_y_min)+1] = 1
 
-	plt.imshow(compare_map_0, cmap="RdBu")
-	legend_red = mpatches.Patch(color = 'maroon', label = "GMapping")
-	legend_blue = mpatches.Patch(color = 'midnightblue', label = "Estimation")	
+	plt.imshow(compare_map_0, cmap="RdBu", vmin=-1.5, vmax=1.5)
+	legend_red = mpatches.Patch(color = 'firebrick', label = "GMapping")
+	legend_blue = mpatches.Patch(color = 'cornflowerblue', label = "Estimation")	
 	plt.legend(handles=[legend_blue, legend_red], loc='upper right', prop = { "size": 8 })
 	plt.tick_params(left = False, right = False , labelleft = False ,
                 	labelbottom = False, bottom = False)
@@ -275,20 +275,25 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	plt.imshow(prob_map, cmap="Blues")
 	plt.show()
 
-	plt.imshow(compare_map, cmap="Blues")
+	plt.imshow(compare_map, cmap="RdBu", vmin=-1.5, vmax=1.5)
+	legend_red = mpatches.Patch(color = 'firebrick', label = "GMapping")
+	legend_blue = mpatches.Patch(color = 'cornflowerblue', label = "Estimation")	
+	plt.legend(handles=[legend_blue, legend_red], loc='upper right', prop = { "size": 8 })
+	plt.tick_params(left = False, right = False , labelleft = False ,
+                	labelbottom = False, bottom = False)
 	plt.show()
 
-	plt.imshow(gt_class, cmap="Blues")
-	plt.show()
+	# plt.imshow(gt_class, cmap="Blues")
+	# plt.show()
 
-	plt.imshow(algo_class, cmap="Blues")
-	plt.show()
+	# plt.imshow(algo_class, cmap="Blues")
+	# plt.show()
 
-	plt.imshow(gt_class_overall, cmap="Blues")
-	plt.show()
+	# plt.imshow(gt_class_overall, cmap="Blues")
+	# plt.show()
 	
-	plt.imshow(algo_class_overall, cmap="Blues")
-	plt.show()
+	# plt.imshow(algo_class_overall, cmap="Blues")
+	# plt.show()
 
 	# Confusion matrix
 	cm_partial = confusion_matrix(gt_class.flatten(), algo_class.flatten(), normalize='all')
@@ -329,8 +334,8 @@ if __name__ == "__main__":
 		pfrees = np.round(np.arange(0.10, 0.50, 0.01),2)
 		for args.pfree in pfrees:
 			print(args.pfree)
-			gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/sr manel - pfree/map.png"
-			map = parent_dir + "/automated-with-comparison/mapping-comparison/images/sr manel - pfree/map_algo-" + str(args.pfree) + ".png"
+			gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/deec-images/map-deec.png"
+			map = parent_dir + "/automated-with-comparison/mapping-comparison/images/srManel-images/map_algo-res_0.1-("+ str(args.pfree) + ")--[0.196;0.65]--" + ".png"
 
 			print(map)
 			
@@ -352,15 +357,15 @@ if __name__ == "__main__":
 			else:
 				print("No values were saved, since 'Y' was not pressed.")
 	else:
-		gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/sr manel - pfree/map.png"
-		map = parent_dir + "/automated-with-comparison/mapping-comparison/images/sr manel - pfree/map_algo-" + str(args.pfree) + ".png"
+		gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/deec-images/map-deec.png"
+		map = parent_dir + "/automated-with-comparison/mapping-comparison/images/deec-images/map_algo-res_0.1-("+ str(args.pfree) + ")--[0.196;0.65]--" + ".png"
 
 		print(map)
 		
 		adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, error_overlap, partials, pred_error = get_compare(gmapping, map, resolution=0.1)
 
 		#save = input("Y to save: ")
-		save = "n"
+		save = "Y"
 		if save == "Y":
 			if os.path.exists(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt"):
 				file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "a")
