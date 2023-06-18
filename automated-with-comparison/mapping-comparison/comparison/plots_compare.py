@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     parent_dir = os.getcwd()
-    file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare.txt", "r")
+    file = open(parent_dir + "/automated-with-comparison/mapping-comparison/data/data_compare - corredores2_log odds.txt", "r")
     file.readline()
     logs = []
     adnns = []
