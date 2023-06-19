@@ -318,6 +318,8 @@ def get_compare(groud_truth_file: str, image_file:str, resolution:float):
 	# print(trans1[-1])
 	# print(trans2[-1])
 
+	print(len(pc_image_occupied))
+
 	print(adnn_eu, error, error_overlap)
 
 	return adnn_eu, msdnn_eu, adnn_cos, msdnn_cos, error, error_overlap, partial_error, pred_error
@@ -340,8 +342,11 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 
 	if args.res != "0.1" and args.res != None:
-		logs = ["0.45", "0.47", "0.49"]
-		posts = ["[0.1;0.9]", "[0.196;0.65]"]
+		# logs = ["0.45", "0.47", "0.49"]
+		# posts = ["[0.1;0.9]", "[0.196;0.65]"]
+
+		logs = ["0.45"]
+		posts = ["[0.196;0.65]"]
 
 		for l in logs:
 			for p in posts:
@@ -442,8 +447,8 @@ if __name__ == "__main__":
 				print("No values were saved, since 'Y' was not pressed.")
 	
 	elif args.postmin != None:
-		gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/deec-images/map-deec.png"
-		map = parent_dir + "/automated-with-comparison/mapping-comparison/images/deec-images/map_algo-res_" + str(args.res) + "-(" + str(args.pfree) + ")--[" + str(args.postmin) + ";" + str(args.postmax) + "]--.png"
+		gmapping = parent_dir + "/automated-with-comparison/mapping-comparison/images/corredores-images/map.png"
+		map = parent_dir + "/automated-with-comparison/mapping-comparison/images/corredores-images/map_algo-res_" + str(args.res) + "-(" + str(args.pfree) + ")--[" + str(args.postmin) + ";" + str(args.postmax) + "]--.png"
 
 		print(map)
 		
